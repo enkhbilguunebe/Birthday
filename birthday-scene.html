@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#140821" />
+  <title>Birthday Planet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/birthday-scene.css" />
+</head>
+<body>
+  <div id="loading" class="loading-screen" role="status" aria-live="polite">
+    <div class="loader-orbit"><span></span><i></i></div>
+    <p class="eyebrow">Birthday Planet</p>
+    <h1>Preparing your birthday table…</h1>
+    <div class="loading-track"><b id="loadingBar"></b></div>
+    <p id="loadingText">0%</p>
+  </div>
+
+  <canvas id="birthdayCanvas" aria-label="Interactive 3D birthday table"></canvas>
+  <div id="effects" aria-hidden="true"></div>
+
+  <header id="sceneHud" class="scene-hud">
+    <a class="glass-button return-button" href="index.html#birthday-planet">← Return to the Universe</a>
+    <div class="scene-actions">
+      <button id="focusCake" class="glass-button" aria-label="Focus camera on cake">Focus on Cake</button>
+      <button id="resetView" class="glass-button" aria-label="Reset view">Reset</button>
+      <button id="musicToggle" class="glass-button icon-only" aria-label="Mute or unmute music">♫</button>
+      <button id="fullscreenToggle" class="glass-button icon-only" aria-label="Toggle fullscreen">⛶</button>
+      <button id="hideUi" class="glass-button icon-only" aria-label="Hide controls">◌</button>
+    </div>
+  </header>
+
+  <section id="birthdayMessage" class="message-card glass-panel">
+    <p class="eyebrow">The final destination</p>
+    <h1>Happy 19th Birthday.</h1>
+    <p>You make my universe brighter simply by being in it.</p>
+    <button id="closeMessage" class="primary-button">Enter the Celebration</button>
+  </section>
+
+  <section id="candlePanel" class="candle-panel glass-panel" aria-label="Birthday candle controls">
+    <p id="candleStatus">Make a wish, then blow out the 19 candles.</p>
+    <div class="candle-buttons">
+      <button id="micButton" class="primary-button">Allow Microphone</button>
+      <button id="blowButton" class="secondary-button">Tap to Blow Out</button>
+      <button id="relightButton" class="secondary-button hidden">Light the Candles Again</button>
+    </div>
+    <div id="micMeter" class="mic-meter" aria-hidden="true"><span></span></div>
+  </section>
+
+  <p id="instructions" class="instructions">Drag to look around • Pinch or scroll to zoom • Tap a frame to add your photo</p>
+
+  <aside id="frameEditor" class="frame-editor glass-panel" aria-hidden="true">
+    <button id="closeFrameEditor" class="editor-close" aria-label="Close photo editor">×</button>
+    <p class="eyebrow">Memory Frame</p>
+    <h2 id="frameTitle">Photo Frame</h2>
+    <p>Choose a photo and it will become part of the 3D scene.</p>
+    <div class="editor-actions">
+      <button id="replacePhoto" class="primary-button">Choose / Replace Photo</button>
+      <button id="removePhoto" class="secondary-button">Remove Photo</button>
+    </div>
+  </aside>
+
+  <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden />
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <audio id="ambientMusic" loop preload="none"><source src="assets/music/background.mp3" type="audio/mpeg"></audio>
+  <audio id="birthdayMusic" preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/birthday-scene.js"></script>
+</body>
+</html>
