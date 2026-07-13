@@ -38,10 +38,6 @@ Replace the placeholder text in the `letter` section inside `js/app.js`.
 Commercial song files are not included. Add only audio you have permission to use.
 The microphone candle feature works best on Chrome or Edge over HTTPS, including GitHub Pages.
 
-## Birthday Planet 3D scene
 
-Clicking **Birthday Planet** now opens `birthday-scene.html`, a separate interactive Three.js birthday-table scene. It includes a procedural tiramisu cake, 19 candles, microphone blowing, photo frames that save uploaded images in the browser, a night waterfront skyline, hidden notes, music controls, confetti, balloons, and fireworks.
-
-Optional music files:
-- `assets/music/background.mp3`
-- `assets/music/birthday.mp3`
+## Performance update
+The main universe now uses 100 directly clickable stars instead of a Reasons Planet. Birthday Planet uses only `assets/music/birthday.mp3`. The 3D scene has reduced geometry, lighting, shadows, particles, and render resolution for smoother performance.

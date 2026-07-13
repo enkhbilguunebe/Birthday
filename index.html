@@ -66,9 +66,6 @@
     <button class="planet planet-laugh" data-section="laughter" style="--x:82%;--y:60%;--size:92px;--delay:1.6s">
       <span class="planet-core"></span><span class="planet-label">Laughing Planet</span>
     </button>
-    <button class="planet planet-reasons" data-section="reasons" style="--x:22%;--y:70%;--size:142px;--delay:2s">
-      <span class="planet-core"></span><span class="planet-label">100 Reasons</span>
-    </button>
     <button class="planet planet-future" data-section="future" style="--x:60%;--y:78%;--size:98px;--delay:2.4s">
       <span class="planet-core"></span><span class="planet-label">Future Planet</span>
     </button>
@@ -83,6 +80,14 @@
     <button id="secretDog" class="secret secret-dog" aria-label="Hidden dog">ᵔᴥᵔ</button>
     <button id="secretTulip" class="secret secret-tulip" aria-label="Hidden tulip">🌷</button>
   </main>
+
+  <div id="reasonCounter" class="reason-counter hidden" aria-live="polite"><span id="reasonCount">0</span> / 100 stars discovered</div>
+
+  <section id="reasonPopup" class="reason-popup" aria-hidden="true">
+    <button id="closeReason" class="close-btn" aria-label="Close reason">×</button>
+    <span id="reasonNumber">Star 1</span>
+    <p id="reasonMessage"></p>
+  </section>
 
   <section id="panel" class="content-panel" aria-hidden="true">
     <button id="closePanel" class="close-btn" aria-label="Close section">×</button>

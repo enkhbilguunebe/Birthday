@@ -17,5 +17,5 @@ const REASONS = [
 ];
 
 const DESTINATIONS = [
-  ["memories","Memory Constellation"],["photos","Photo Planet"],["music","Music Planet"],["laughter","Laughing Planet"],["reasons","100 Reasons"],["future","Future Planet"],["letter","Love Letter Moon"],["birthday","Birthday Planet"]
+  ["memories","Memory Constellation"],["photos","Photo Planet"],["music","Music Planet"],["laughter","Laughing Planet"],["future","Future Planet"],["letter","Love Letter Moon"],["birthday","Birthday Planet"]
 ];

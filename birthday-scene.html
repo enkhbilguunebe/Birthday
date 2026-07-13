@@ -9,6 +9,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/birthday-scene.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
   <div id="loading" class="loading-screen" role="status" aria-live="polite">
@@ -66,17 +74,8 @@
   <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden />
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <audio id="ambientMusic" loop preload="none"><source src="assets/music/background.mp3" type="audio/mpeg"></audio>
-  <audio id="birthdayMusic" preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
+  <audio id="birthdayMusic" loop preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
-    }
-  }
-  </script>
   <script type="module" src="js/birthday-scene.js"></script>
 </body>
 </html>
