@@ -11,6 +11,17 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## File structure
+```
+index.html          entry point
+css/style.css        all visual styling (planets, HUD, panels, birthday scene)
+js/data.js            editable content: memories, songs, reasons, destinations
+js/starfield.js       the WebGL starfield + nebula + CSS star fallback
+js/app.js             app logic: navigation, panels, birthday interaction
+assets/music/         your audio files (not included)
+assets/images/        your photos (not included)
+```
+
 ## Add your background music
 Place your chosen file here:
 
