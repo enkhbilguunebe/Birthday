@@ -46,3 +46,12 @@ python -m http.server 8000
 ```
 
 Then open `http://localhost:8000`.
+
+## Latest fixes
+- Future Planet removed.
+- Music Planet labels updated.
+- Birthday scene uses only `assets/music/birthday.mp3`.
+- Photo frames repositioned so their stands remain on the table.
+- Microphone detection now calibrates to room noise and reacts to sustained sound more reliably.
+- Added pink, purple, blue, and warm table lighting.
+- Dragging performance improved on the universe page.

@@ -53,6 +53,9 @@ let microphoneAnalyser = null;
 let microphoneData = null;
 let microphoneActive = false;
 let sustainedBlowFrames = 0;
+let microphoneNoiseFloor = 0.008;
+let microphoneCalibrationFrames = 0;
+let lastMicrophoneExtinguish = 0;
 let allCandlesOut = false;
 let lastTime = 0;
 let inactiveTimer;
@@ -129,11 +132,11 @@ function setupFallbackPhotos() {
 async function init() {
   updateProgress(5, 'Starting the 3D renderer…');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowQuality, powerPreference: 'high-performance', alpha: false });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1 : 1.3));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.85 : 1.15));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.18;
   renderer.shadowMap.enabled = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -147,9 +150,9 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 2.4, 0);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.14;
-  controls.rotateSpeed = 0.72;
-  controls.zoomSpeed = 0.9;
+  controls.dampingFactor = 0.075;
+  controls.rotateSpeed = 0.88;
+  controls.zoomSpeed = 1.0;
   controls.panSpeed = 0.5;
   controls.enablePan = false;
   controls.minDistance = 8.2;
@@ -322,22 +325,28 @@ function createPanorama() {
 }
 
 function createLighting() {
-  scene.add(new THREE.HemisphereLight(0x9387bd, 0x1f1021, 1.25));
-  const key = new THREE.DirectionalLight(0xffe0d0, 2.8);
+  scene.add(new THREE.HemisphereLight(0xb9a9df, 0x24132d, 1.65));
+
+  const key = new THREE.DirectionalLight(0xffe8d8, 3.4);
   key.position.set(-5, 10, 7);
-  key.castShadow = !lowQuality;
-  key.shadow.mapSize.set(lowQuality ? 512 : 1024, lowQuality ? 512 : 1024);
-  key.shadow.camera.near = 1;
-  key.shadow.camera.far = 35;
+  key.castShadow = false;
   scene.add(key);
 
-  const purpleFill = new THREE.PointLight(0xb986ff, 14, 25, 2);
-  purpleFill.position.set(5, 5, 4);
+  const purpleFill = new THREE.PointLight(0xb779ff, lowQuality ? 10 : 15, 24, 2);
+  purpleFill.position.set(5.5, 5.2, 3.5);
   scene.add(purpleFill);
 
-  const warmFill = new THREE.PointLight(0xffb878, 9, 18, 2);
-  warmFill.position.set(-4, 3.8, 4);
-  scene.add(warmFill);
+  const pinkFill = new THREE.PointLight(0xff6fc7, lowQuality ? 8 : 13, 22, 2);
+  pinkFill.position.set(-5.2, 4.6, 2.8);
+  scene.add(pinkFill);
+
+  const blueRim = new THREE.PointLight(0x70a7ff, lowQuality ? 6 : 10, 24, 2);
+  blueRim.position.set(0, 5.8, -5.5);
+  scene.add(blueRim);
+
+  const warmTable = new THREE.PointLight(0xffc27b, lowQuality ? 7 : 11, 15, 2);
+  warmTable.position.set(0, 4.2, 4.2);
+  scene.add(warmTable);
 }
 
 function createCheckeredTexture() {
@@ -545,12 +554,13 @@ function makeFrame(index, position, rotation, scale = 1) {
 }
 
 async function createPhotoFrames() {
+  // Raised and moved inward so every frame stand rests on the tabletop.
   const specs = [
-    [new THREE.Vector3(-4.15, 1.65, 1.05), new THREE.Euler(-0.03, 0.36, -0.08), 0.86],
-    [new THREE.Vector3(-2.65, 1.82, 0.25), new THREE.Euler(-0.02, 0.22, -0.03), 0.92],
-    [new THREE.Vector3(0, 1.95, -1.35), new THREE.Euler(-0.02, 0, 0), 0.76],
-    [new THREE.Vector3(2.65, 1.82, 0.25), new THREE.Euler(-0.02, -0.22, 0.03), 0.92],
-    [new THREE.Vector3(4.15, 1.65, 1.05), new THREE.Euler(-0.03, -0.36, 0.08), 0.86]
+    [new THREE.Vector3(-3.65, 2.72, 0.70), new THREE.Euler(-0.03, 0.30, -0.07), 0.78],
+    [new THREE.Vector3(-2.25, 2.70, 0.05), new THREE.Euler(-0.02, 0.18, -0.025), 0.84],
+    [new THREE.Vector3(0, 2.48, -1.52), new THREE.Euler(-0.02, 0, 0), 0.68],
+    [new THREE.Vector3(2.25, 2.70, 0.05), new THREE.Euler(-0.02, -0.18, 0.025), 0.84],
+    [new THREE.Vector3(3.65, 2.72, 0.70), new THREE.Euler(-0.03, -0.30, 0.07), 0.78]
   ];
   specs.forEach((s, i) => scene.add(makeFrame(i, s[0], s[1], s[2])));
 }
@@ -626,8 +636,35 @@ function createDecorations() {
     positions[i * 3 + 2] = -2.4;
   }
   fairyGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  const fairy = new THREE.Points(fairyGeo, new THREE.PointsMaterial({ color: 0xffd7a4, size: 0.09, transparent: true, opacity: 0.86 }));
+  const fairyMaterial = new THREE.PointsMaterial({
+    color: 0xffd7a4,
+    size: lowQuality ? 0.075 : 0.10,
+    transparent: true,
+    opacity: 0.92,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const fairy = new THREE.Points(fairyGeo, fairyMaterial);
   scene.add(fairy);
+
+  // Lightweight coloured table accents: visible bulbs plus only three actual lights.
+  const accentColors = [0xff7cc9, 0x9f87ff, 0x6fb8ff];
+  const accentPositions = [
+    new THREE.Vector3(-3.8, 1.05, -2.1),
+    new THREE.Vector3(0, 1.15, -2.35),
+    new THREE.Vector3(3.8, 1.05, -2.1)
+  ];
+  accentPositions.forEach((position, index) => {
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.10, 10, 8),
+      new THREE.MeshBasicMaterial({ color: accentColors[index] })
+    );
+    bulb.position.copy(position);
+    scene.add(bulb);
+    const light = new THREE.PointLight(accentColors[index], lowQuality ? 2.4 : 4.0, 8.5, 2);
+    light.position.copy(position).add(new THREE.Vector3(0, 0.35, 0.25));
+    scene.add(light);
+  });
 }
 
 function makeFlameTexture() {
@@ -1022,11 +1059,15 @@ async function startMicrophone() {
   try {
     microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
     microphoneContext = new (window.AudioContext || window.webkitAudioContext)();
+    await microphoneContext.resume();
     const source = microphoneContext.createMediaStreamSource(microphoneStream);
     microphoneAnalyser = microphoneContext.createAnalyser();
-    microphoneAnalyser.fftSize = 512;
-    microphoneAnalyser.smoothingTimeConstant = 0.35;
-    microphoneData = new Uint8Array(microphoneAnalyser.frequencyBinCount);
+    microphoneAnalyser.fftSize = 256;
+    microphoneAnalyser.smoothingTimeConstant = 0.12;
+    microphoneData = new Uint8Array(microphoneAnalyser.fftSize);
+    microphoneNoiseFloor = 0.008;
+    microphoneCalibrationFrames = 0;
+    sustainedBlowFrames = 0;
     source.connect(microphoneAnalyser);
     microphoneActive = true;
     micButton.disabled = true;
@@ -1050,28 +1091,44 @@ function stopMicrophone() {
 }
 
 function sampleMicrophone() {
-  if (!microphoneActive || !microphoneAnalyser) return;
+  if (!microphoneActive || !microphoneAnalyser || !microphoneData) return;
+
   microphoneAnalyser.getByteTimeDomainData(microphoneData);
   let sum = 0;
-  let zeroCrossings = 0;
-  let previous = microphoneData[0] - 128;
+  let peak = 0;
   for (let i = 0; i < microphoneData.length; i++) {
-    const value = microphoneData[i] - 128;
+    const value = (microphoneData[i] - 128) / 128;
     sum += value * value;
-    if ((value >= 0 && previous < 0) || (value < 0 && previous >= 0)) zeroCrossings++;
-    previous = value;
+    peak = Math.max(peak, Math.abs(value));
   }
-  const rms = Math.sqrt(sum / microphoneData.length) / 128;
-  const meter = Math.min(100, rms * 360);
+  const rms = Math.sqrt(sum / microphoneData.length);
+
+  // Learn the room's normal noise briefly, then use an adaptive threshold.
+  if (microphoneCalibrationFrames < 24) {
+    microphoneNoiseFloor = microphoneNoiseFloor * 0.82 + rms * 0.18;
+    microphoneCalibrationFrames++;
+  } else if (rms < microphoneNoiseFloor * 1.35) {
+    microphoneNoiseFloor = microphoneNoiseFloor * 0.98 + rms * 0.02;
+  }
+
+  const threshold = Math.max(0.014, microphoneNoiseFloor * 1.75);
+  const loudness = Math.max(rms, peak * 0.55);
+  const meter = Math.min(100, (loudness / Math.max(threshold * 3.2, 0.06)) * 100);
   micMeter.style.width = `${meter}%`;
-  const soundsLikeBlow = rms > 0.065 && zeroCrossings > 10;
-  sustainedBlowFrames = soundsLikeBlow ? sustainedBlowFrames + 1 : Math.max(0, sustainedBlowFrames - 2);
-  if (sustainedBlowFrames > 14) {
+
+  // A blow, voice, or clap held for a few frames will work reliably.
+  const detected = microphoneCalibrationFrames >= 10 && loudness > threshold;
+  sustainedBlowFrames = detected ? sustainedBlowFrames + 1 : Math.max(0, sustainedBlowFrames - 1);
+
+  const now = performance.now();
+  if (sustainedBlowFrames >= 3 && now - lastMicrophoneExtinguish > 90) {
     sustainedBlowFrames = 0;
+    lastMicrophoneExtinguish = now;
     extinguishOne();
+    // Stronger airflow extinguishes a second candle, making one sustained blow useful.
+    if (loudness > threshold * 2.2) setTimeout(extinguishOne, 55);
   }
 }
-
 function launchCelebration() {
   launchConfetti();
   launchBalloons();
@@ -1162,7 +1219,7 @@ function markUiActive() {
 function onResize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1 : 1.3));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.85 : 1.15));
   renderer.setSize(innerWidth, innerHeight, false);
 }
 function onKeyDown(event) {
@@ -1182,7 +1239,7 @@ function onKeyDown(event) {
 function animate(time = 0) {
   requestAnimationFrame(animate);
   if (document.hidden) return;
-  const targetInterval = lowQuality ? 33 : 22;
+  const targetInterval = lowQuality ? 20 : 16;
   if (time - lastTime < targetInterval) return;
   const delta = Math.min(clock.getDelta(), 0.05);
   controls.update();

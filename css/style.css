@@ -45,3 +45,14 @@
 .song-card strong { display:block; font-size:1rem; }
 .song-artist { margin:3px 0 0; color:#e7d7f2; font-size:.9rem; }
 .song-note { margin:5px 0 0; color:#bfaecb; font-size:.82rem; }
+
+/* Drag-performance mode: expensive glow filters are temporarily reduced while moving. */
+.world-viewport.dragging .star-point { filter: none !important; transition: none !important; }
+.world-viewport.dragging .planet::before { filter: drop-shadow(0 7px 9px rgba(0,0,0,.28)) !important; }
+.world-viewport.dragging .planet::after { display:none; }
+.world { contain: layout paint style; }
+@media (max-width:850px) {
+  .overlay-screen,.transition-screen,.glass-card,.content-panel,.counter-pill,.hud { backdrop-filter:none; }
+  .star-point { filter:drop-shadow(0 0 4px rgba(255,255,255,.7)); }
+  .planet::after { filter:blur(6px); }
+}
