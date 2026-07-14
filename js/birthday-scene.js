@@ -9,8 +9,8 @@ const loadingText = document.getElementById('loadingText');
 const fallback = document.getElementById('webglFallback');
 const toast = document.getElementById('toast');
 const effects = document.getElementById('effects');
-const ambientMusic = document.getElementById('ambientMusic');
 const birthdayMusic = document.getElementById('birthdayMusic');
+const ambientMusic = birthdayMusic;
 const enterCelebration = document.getElementById('enterCelebration');
 const messageCard = document.getElementById('birthdayMessage');
 const candleStatus = document.getElementById('candleStatus');
@@ -762,10 +762,9 @@ async function finishCandles() {
   stopMicrophone();
   candleStatus.textContent = 'Happy 19th Birthday. I hope this year brings you the same happiness, love, and warmth that you bring into my life every day.';
   relightButton.classList.remove('hidden');
-  fadeAudio(ambientMusic, 0, 700, true);
   try {
     birthdayMusic.volume = Number(document.getElementById('volumeSlider').value);
-    await birthdayMusic.play();
+    if (birthdayMusic.paused) await birthdayMusic.play();
   } catch {
     showToast('Music has not been added yet.');
   }
@@ -999,8 +998,8 @@ async function restoreFrameRecords() {
 
 function enterScene() {
   messageCard.style.display = 'none';
-  ambientMusic.volume = Number(document.getElementById('volumeSlider').value);
-  ambientMusic.play().catch(() => showToast('Music has not been added yet.'));
+  birthdayMusic.volume = Number(document.getElementById('volumeSlider').value);
+  birthdayMusic.play().catch(() => showToast('Music has not been added yet.')); 
 }
 
 function fadeAudio(audio, target, duration, pauseAtEnd = false) {
@@ -1139,16 +1138,10 @@ function toggleFullscreen() {
   else document.exitFullscreen?.();
 }
 function toggleMusic() {
-  if (!ambientMusic.paused || !birthdayMusic.paused) {
-    ambientMusic.pause();
-    birthdayMusic.pause();
-  } else {
-    const track = allCandlesOut ? birthdayMusic : ambientMusic;
-    track.play().catch(() => showToast('Music has not been added yet.'));
-  }
+  if (!birthdayMusic.paused) birthdayMusic.pause();
+  else birthdayMusic.play().catch(() => showToast('Music has not been added yet.'));
 }
 function updateVolume(event) {
-  ambientMusic.volume = Number(event.target.value);
   birthdayMusic.volume = Number(event.target.value);
 }
 function toggleAnimation() {
