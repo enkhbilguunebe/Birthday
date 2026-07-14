@@ -1,43 +1,36 @@
 # Our Story Among the Stars
 
-A GitHub Pages-ready birthday website.
+Upload all files in this folder directly to the root of your GitHub repository.
 
-## Run locally
-Open `index.html` with a local server. Examples:
+## Important structure
 
-```bash
-python3 -m http.server 8000
-```
+- `index.html`
+- `birthday-scene.html`
+- `css/`
+- `js/`
+- `assets/`
+- `.nojekyll`
+- `404.html`
 
-Then open `http://localhost:8000`.
+## Optional music files
 
-## Add your background music
-Place your chosen file here:
+Put your music here:
 
-`assets/music/background.mp3`
+- `assets/music/background.mp3`
+- `assets/music/birthday.mp3`
 
-The browser can only start music after the visitor clicks a button.
+If the files are missing, the website still works.
 
-## Add memories
-Edit `js/data.js`. Replace each memory's date, location, description, and image path.
+## Editable content
 
-## Add photos
-Place photos in `assets/images/`, then replace the placeholders in `renderSection('photos')` inside `js/app.js`.
+Edit `js/data.js` to change:
 
-## Add the love letter
-Replace the placeholder text in the `letter` section inside `js/app.js`.
+- memories
+- reasons
+- future plans
+- laughter content
+- love letter
 
-## GitHub Pages
-1. Create a new GitHub repository.
-2. Upload every file and folder from this project.
-3. Open repository Settings → Pages.
-4. Select “Deploy from a branch.”
-5. Choose `main` and `/root`.
+## Photo frames
 
-## Important
-Commercial song files are not included. Add only audio you have permission to use.
-The microphone candle feature works best on Chrome or Edge over HTTPS, including GitHub Pages.
-
-
-## Performance update
-The main universe now uses 100 directly clickable stars instead of a Reasons Planet. Birthday Planet uses only `assets/music/birthday.mp3`. The 3D scene has reduced geometry, lighting, shadows, particles, and render resolution for smoother performance.
+Photos added on the birthday page are saved in the browser using localStorage.

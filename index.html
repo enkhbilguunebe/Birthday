@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#12081f" />
+  <meta name="theme-color" content="#100616" />
   <title>Our Story Among the Stars</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <canvas id="universe" aria-hidden="true"></canvas>
-  <div class="nebula" aria-hidden="true"></div>
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
+  <div class="nebula-layer" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
 
-  <section id="welcome" class="overlay-screen active">
+  <section id="welcome" class="overlay-screen active" aria-label="Welcome">
     <div class="glass-card welcome-card">
-      <p class="eyebrow">A small universe made for you</p>
+      <p class="eyebrow">A universe made with love</p>
       <h1>Our Story Among the Stars</h1>
       <p>For the best experience, enter full screen, turn up your volume, and take your time.</p>
       <div class="button-row">
@@ -27,8 +27,8 @@
     </div>
   </section>
 
-  <section id="intro" class="overlay-screen">
-    <div class="intro-copy">
+  <section id="intro" class="overlay-screen" aria-label="Intro">
+    <div class="intro-copy glass-card">
       <p>In a universe filled with billions of people, somehow I found you.</p>
       <button id="beginStory" class="primary-btn">Begin Our Story</button>
     </div>
@@ -38,9 +38,10 @@
     <button id="menuBtn" class="icon-btn" aria-label="Open universe map">☰</button>
     <div class="hud-center">
       <strong id="locationLabel">Our Little Universe</strong>
-      <span>Drag to explore · Scroll to zoom · Click anything that glows</span>
+      <span>Drag to explore · Scroll to zoom · Click stars and planets</span>
     </div>
     <div class="hud-actions">
+      <div id="starCounter" class="counter-pill">0 / 100 stars</div>
       <button id="musicToggle" class="icon-btn" aria-label="Toggle music">♫</button>
       <button id="fullscreenToggle" class="icon-btn" aria-label="Toggle fullscreen">⛶</button>
     </div>
@@ -49,57 +50,62 @@
   <aside id="sideMenu" class="side-menu" aria-hidden="true">
     <button id="closeMenu" class="close-btn" aria-label="Close menu">×</button>
     <p class="eyebrow">Universe Map</p>
-    <h2>Choose a destination</h2>
+    <h2>Destinations</h2>
     <nav id="destinationList"></nav>
   </aside>
 
-  <main id="world" class="world hidden" aria-label="Interactive universe">
-    <button class="planet planet-memory" data-section="memories" style="--x:18%;--y:28%;--size:132px;--delay:0s">
-      <span class="planet-core"></span><span class="planet-label">Memory Constellation</span>
-    </button>
-    <button class="planet planet-photo" data-section="photos" style="--x:70%;--y:23%;--size:104px;--delay:.8s">
-      <span class="planet-core"></span><span class="planet-label">Photo Planet</span>
-    </button>
-    <button class="planet planet-music" data-section="music" style="--x:48%;--y:50%;--size:118px;--delay:1.2s">
-      <span class="planet-core"></span><span class="planet-label">Music Planet</span>
-    </button>
-    <button class="planet planet-laugh" data-section="laughter" style="--x:82%;--y:60%;--size:92px;--delay:1.6s">
-      <span class="planet-core"></span><span class="planet-label">Laughing Planet</span>
-    </button>
-    <button class="planet planet-future" data-section="future" style="--x:60%;--y:78%;--size:98px;--delay:2.4s">
-      <span class="planet-core"></span><span class="planet-label">Future Planet</span>
-    </button>
-    <button class="planet planet-moon" data-section="letter" style="--x:10%;--y:48%;--size:110px;--delay:2.8s">
-      <span class="planet-core"></span><span class="planet-label">Love Letter Moon</span>
-    </button>
-    <button class="planet planet-birthday" data-section="birthday" style="--x:88%;--y:34%;--size:154px;--delay:3.2s">
-      <span class="planet-core"></span><span class="planet-label">Birthday Planet</span>
-    </button>
+  <main id="worldViewport" class="world-viewport hidden" aria-label="Interactive universe viewport">
+    <div id="world" class="world">
+      <div id="starsLayer" class="stars-layer" aria-hidden="false"></div>
 
-    <button id="secretCapy" class="secret secret-capy" aria-label="Hidden capybara">◕ᴥ◕</button>
-    <button id="secretDog" class="secret secret-dog" aria-label="Hidden dog">ᵔᴥᵔ</button>
-    <button id="secretTulip" class="secret secret-tulip" aria-label="Hidden tulip">🌷</button>
+      <button class="planet planet-memory" data-section="memories" style="--x:16%;--y:24%;--size:140px" aria-label="Open Memory Constellation">
+        <span class="planet-label">Memory Constellation</span>
+      </button>
+      <button class="planet planet-photo" data-section="photos" style="--x:67%;--y:20%;--size:126px" aria-label="Open Photo Planet">
+        <span class="planet-label">Photo Planet</span>
+      </button>
+      <button class="planet planet-music" data-section="music" style="--x:46%;--y:46%;--size:132px" aria-label="Open Music Planet">
+        <span class="planet-label">Music Planet</span>
+      </button>
+      <button class="planet planet-laugh" data-section="laughter" style="--x:82%;--y:61%;--size:108px" aria-label="Open Laughing Planet">
+        <span class="planet-label">Laughing Planet</span>
+      </button>
+      <button class="planet planet-future" data-section="future" style="--x:59%;--y:76%;--size:118px" aria-label="Open Future Planet">
+        <span class="planet-label">Future Planet</span>
+      </button>
+      <button class="planet planet-moon" data-section="letter" style="--x:10%;--y:55%;--size:132px" aria-label="Open Love Letter Moon">
+        <span class="planet-label">Love Letter Moon</span>
+      </button>
+      <button id="birthdayPlanet" class="planet planet-birthday" data-section="birthday" style="--x:87%;--y:31%;--size:162px" aria-label="Open Birthday Planet">
+        <span class="planet-label">Birthday Planet</span>
+      </button>
+    </div>
   </main>
-
-  <div id="reasonCounter" class="reason-counter hidden" aria-live="polite"><span id="reasonCount">0</span> / 100 stars discovered</div>
-
-  <section id="reasonPopup" class="reason-popup" aria-hidden="true">
-    <button id="closeReason" class="close-btn" aria-label="Close reason">×</button>
-    <span id="reasonNumber">Star 1</span>
-    <p id="reasonMessage"></p>
-  </section>
 
   <section id="panel" class="content-panel" aria-hidden="true">
     <button id="closePanel" class="close-btn" aria-label="Close section">×</button>
     <div id="panelContent"></div>
   </section>
 
-  <div id="toast" class="toast" role="status"></div>
+  <section id="starModal" class="content-panel star-modal" aria-hidden="true">
+    <button id="closeStarModal" class="close-btn" aria-label="Close star message">×</button>
+    <div id="starContent"></div>
+  </section>
+
+  <section id="planetTransition" class="transition-screen" aria-hidden="true">
+    <div class="transition-glow"></div>
+    <div class="transition-copy">
+      <p class="eyebrow">Birthday Planet</p>
+      <h2>The final celebration is waiting.</h2>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   <audio id="backgroundAudio" loop preload="none">
     <source src="assets/music/background.mp3" type="audio/mpeg" />
   </audio>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.min.js"></script>
   <script src="js/data.js"></script>
   <script src="js/app.js"></script>
 </body>

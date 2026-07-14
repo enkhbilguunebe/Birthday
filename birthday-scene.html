@@ -7,19 +7,11 @@
   <title>Birthday Planet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/birthday-scene.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
-    }
-  }
-  </script>
 </head>
 <body>
-  <div id="loading" class="loading-screen" role="status" aria-live="polite">
+  <div id="loading" class="loading-screen active" role="status" aria-live="polite">
     <div class="loader-orbit"><span></span><i></i></div>
     <p class="eyebrow">Birthday Planet</p>
     <h1>Preparing your birthday table…</h1>
@@ -27,17 +19,59 @@
     <p id="loadingText">0%</p>
   </div>
 
-  <canvas id="birthdayCanvas" aria-label="Interactive 3D birthday table"></canvas>
-  <div id="effects" aria-hidden="true"></div>
+  <div id="sceneViewport" class="scene-viewport" aria-label="Interactive birthday scene">
+    <div id="sceneRoot" class="scene-root">
+      <div class="scene-space">
+        <div class="sky"></div>
+        <div class="cityline cityline-back"></div>
+        <div class="cityline cityline-mid"></div>
+        <div class="water"></div>
+        <div class="sparkle-layer" id="sparkles"></div>
+
+        <div class="table-scene">
+          <div class="table-top"></div>
+          <div class="card note-card">Happy Birthday</div>
+
+          <button class="frame frame-1" data-frame="0"><span>Add a memory</span><img alt="Frame 1"></button>
+          <button class="frame frame-2" data-frame="1"><span>Add a memory</span><img alt="Frame 2"></button>
+          <button class="frame frame-3" data-frame="2"><span>Add a memory</span><img alt="Frame 3"></button>
+          <button class="frame frame-4" data-frame="3"><span>Add a memory</span><img alt="Frame 4"></button>
+          <button class="frame frame-5" data-frame="4"><span>Add a memory</span><img alt="Frame 5"></button>
+
+          <div class="cake-wrap">
+            <div id="cake" class="cake" aria-label="Birthday cake">
+              <div class="plate"></div>
+              <div class="cake-shadow"></div>
+              <div class="cake-body">
+                <div class="layer cocoa top"></div>
+                <div class="layer cream l1"></div>
+                <div class="layer sponge s1"></div>
+                <div class="layer cream l2"></div>
+                <div class="layer sponge s2"></div>
+                <div class="layer cream l3"></div>
+                <div class="layer sponge s3"></div>
+                <div class="plaque">Happy Birthday</div>
+                <div class="sticks stick-a"></div>
+                <div class="sticks stick-b"></div>
+                <div class="candles" id="candles"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="effects" class="effects" aria-hidden="true"></div>
 
   <header id="sceneHud" class="scene-hud">
-    <a class="glass-button return-button" href="index.html#birthday-planet">← Return to the Universe</a>
+    <a class="glass-button" href="index.html#birthday-planet">← Return to the Universe</a>
     <div class="scene-actions">
-      <button id="focusCake" class="glass-button" aria-label="Focus camera on cake">Focus on Cake</button>
-      <button id="resetView" class="glass-button" aria-label="Reset view">Reset</button>
-      <button id="musicToggle" class="glass-button icon-only" aria-label="Mute or unmute music">♫</button>
-      <button id="fullscreenToggle" class="glass-button icon-only" aria-label="Toggle fullscreen">⛶</button>
-      <button id="hideUi" class="glass-button icon-only" aria-label="Hide controls">◌</button>
+      <button id="focusCake" class="glass-button">Focus on Cake</button>
+      <button id="resetView" class="glass-button">Reset</button>
+      <button id="musicToggle" class="glass-button">♫</button>
+      <button id="fullscreenToggle" class="glass-button">⛶</button>
+      <button id="hideUi" class="glass-button">◌</button>
     </div>
   </header>
 
@@ -58,13 +92,13 @@
     <div id="micMeter" class="mic-meter" aria-hidden="true"><span></span></div>
   </section>
 
-  <p id="instructions" class="instructions">Drag to look around • Pinch or scroll to zoom • Tap a frame to add your photo</p>
+  <p id="instructions" class="instructions">Drag to look around • Pinch or scroll to zoom • Tap a frame to add a photo</p>
 
   <aside id="frameEditor" class="frame-editor glass-panel" aria-hidden="true">
     <button id="closeFrameEditor" class="editor-close" aria-label="Close photo editor">×</button>
     <p class="eyebrow">Memory Frame</p>
     <h2 id="frameTitle">Photo Frame</h2>
-    <p>Choose a photo and it will become part of the 3D scene.</p>
+    <p>Choose a photo and it will stay here in this birthday scene.</p>
     <div class="editor-actions">
       <button id="replacePhoto" class="primary-button">Choose / Replace Photo</button>
       <button id="removePhoto" class="secondary-button">Remove Photo</button>
@@ -76,6 +110,6 @@
 
   <audio id="birthdayMusic" loop preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
 
-  <script type="module" src="js/birthday-scene.js"></script>
+  <script src="js/birthday-scene.js"></script>
 </body>
 </html>

@@ -1,87 +1,388 @@
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const welcome=$('#welcome'),intro=$('#intro'),world=$('#world'),hud=$('#hud'),panel=$('#panel'),panelContent=$('#panelContent'),sideMenu=$('#sideMenu'),audio=$('#backgroundAudio');
-let scale=1,tx=0,ty=0,dragging=false,startX=0,startY=0,openedReasons=new Set(),micStream=null,audioCtx=null,analyser=null,micRaf=null,worldRaf=0;
+(() => {
+  const data = window.BIRTHDAY_DATA;
+  const body = document.body;
+  const welcome = document.getElementById('welcome');
+  const intro = document.getElementById('intro');
+  const fullscreenStart = document.getElementById('fullscreenStart');
+  const regularStart = document.getElementById('regularStart');
+  const beginStory = document.getElementById('beginStory');
+  const hud = document.getElementById('hud');
+  const worldViewport = document.getElementById('worldViewport');
+  const world = document.getElementById('world');
+  const panel = document.getElementById('panel');
+  const panelContent = document.getElementById('panelContent');
+  const closePanel = document.getElementById('closePanel');
+  const starModal = document.getElementById('starModal');
+  const starContent = document.getElementById('starContent');
+  const closeStarModal = document.getElementById('closeStarModal');
+  const menuBtn = document.getElementById('menuBtn');
+  const sideMenu = document.getElementById('sideMenu');
+  const closeMenu = document.getElementById('closeMenu');
+  const destinationList = document.getElementById('destinationList');
+  const musicToggle = document.getElementById('musicToggle');
+  const fullscreenToggle = document.getElementById('fullscreenToggle');
+  const backgroundAudio = document.getElementById('backgroundAudio');
+  const locationLabel = document.getElementById('locationLabel');
+  const toast = document.getElementById('toast');
+  const transition = document.getElementById('planetTransition');
+  const starCounter = document.getElementById('starCounter');
+  const starsLayer = document.getElementById('starsLayer');
 
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
-function enterIntro(full=false){if(full) document.documentElement.requestFullscreen?.().catch(()=>{});welcome.classList.remove('active');intro.classList.add('active');audio.volume=.35;audio.play().catch(()=>toast('Add assets/music/background.mp3 to enable music.'))}
-$('#fullscreenStart').onclick=()=>enterIntro(true);$('#regularStart').onclick=()=>enterIntro(false);
-$('#beginStory').onclick=()=>{intro.classList.remove('active');world.classList.remove('hidden');hud.classList.remove('hidden');$('#reasonCounter').classList.remove('hidden');animateEntrance()};
-$('#fullscreenToggle').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.();
-$('#musicToggle').onclick=()=>{audio.paused?audio.play().catch(()=>toast('Add your background MP3 first.')):audio.pause();$('#musicToggle').textContent=audio.paused?'♪':'♫'};
+  let musicEnabled = false;
+  let openedStars = new Set(JSON.parse(localStorage.getItem('openedStars') || '[]'));
+  let view = { x: 0, y: 0, scale: 1 };
+  const minScale = 0.7;
+  const maxScale = 1.65;
+  let dragging = false;
+  let dragStartedOnButton = false;
+  let startPointer = { x: 0, y: 0 };
+  let lastPointer = { x: 0, y: 0 };
+  let moved = 0;
+  let activePointers = new Map();
+  let pinchDist = 0;
 
-function fadeAudioOut(duration=900){
-  if(audio.paused)return;
-  const start=audio.volume, begun=performance.now();
-  const step=now=>{const p=Math.min(1,(now-begun)/duration);audio.volume=start*(1-p);if(p<1)requestAnimationFrame(step);else audio.pause()};
-  requestAnimationFrame(step);
-}
-function enterBirthdayPlanet(){
-  if(document.body.classList.contains('planet-transitioning'))return;
-  document.body.classList.add('planet-transitioning');
-  sideMenu.classList.remove('open');closePanel();fadeAudioOut();
-  const planet=document.querySelector('.planet-birthday');
-  planet?.animate([{transform:'scale(1)',filter:'brightness(1)'},{transform:'scale(2.7)',filter:'brightness(2.4) blur(1px)'}],{duration:1200,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'});
-  const overlay=document.createElement('div');overlay.className='birthday-transition';overlay.innerHTML='<div><p class="eyebrow">The final destination</p><h2>The final celebration is waiting.</h2><span>Entering Birthday Planet…</span></div>';document.body.appendChild(overlay);
-  requestAnimationFrame(()=>overlay.classList.add('show'));
-  setTimeout(()=>location.href='birthday-scene.html',1550);
-}
-function returnNearBirthdayPlanet(){
-  welcome.classList.remove('active');intro.classList.remove('active');world.classList.remove('hidden');hud.classList.remove('hidden');$('#reasonCounter').classList.remove('hidden');
-  scale=1.28;tx=-innerWidth*.12;ty=innerHeight*.05;updateWorld();
-  $('#locationLabel').textContent='Birthday Planet';
-  setTimeout(()=>toast('Welcome back to the universe.'),500);
-}
-if(location.hash==='#birthday-planet')returnNearBirthdayPlanet();
-
-function animateEntrance(){world.animate([{opacity:0,transform:'scale(.75)'},{opacity:1,transform:'scale(1)'}],{duration:1700,easing:'cubic-bezier(.2,.7,.2,1)'})}
-function updateWorld(){if(worldRaf)return;worldRaf=requestAnimationFrame(()=>{world.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${scale})`;worldRaf=0})}
-world.addEventListener('pointerdown',e=>{if(e.target.closest('.planet,.secret,.love-star'))return;dragging=true;world.classList.add('dragging');startX=e.clientX-tx;startY=e.clientY-ty;world.setPointerCapture(e.pointerId)});
-world.addEventListener('pointermove',e=>{if(!dragging)return;tx=e.clientX-startX;ty=e.clientY-startY;updateWorld()});
-world.addEventListener('pointerup',()=>{dragging=false;world.classList.remove('dragging')});
-world.addEventListener('wheel',e=>{e.preventDefault();scale=Math.min(1.65,Math.max(.55,scale-e.deltaY*.001));updateWorld()},{passive:false});
-
-$('#menuBtn').onclick=()=>{sideMenu.classList.add('open');sideMenu.setAttribute('aria-hidden','false')};$('#closeMenu').onclick=()=>{sideMenu.classList.remove('open');sideMenu.setAttribute('aria-hidden','true')};
-DESTINATIONS.forEach(([id,label])=>{const b=document.createElement('button');b.className='nav-item';b.textContent=label;b.onclick=()=>{id==='birthday'?enterBirthdayPlanet():openSection(id);sideMenu.classList.remove('open')};$('#destinationList').appendChild(b)});
-$$('.planet').forEach(p=>p.onclick=()=>p.dataset.section==='birthday'?enterBirthdayPlanet():openSection(p.dataset.section));$('#closePanel').onclick=closePanel;
-function openSection(id){$('#locationLabel').textContent=DESTINATIONS.find(d=>d[0]===id)?.[1]||'Our Little Universe';panelContent.innerHTML=renderSection(id);panel.classList.add('open');panel.setAttribute('aria-hidden','false');bindSection(id)}
-function closePanel(){panel.classList.remove('open');panel.setAttribute('aria-hidden','true');$('#locationLabel').textContent='Our Little Universe';stopMic()}
-const title=(h,p)=>`<header class="section-title"><p class="eyebrow">A place in our universe</p><h2>${h}</h2><p>${p}</p></header>`;
-function renderSection(id){
- if(id==='memories')return title('Memory Constellation','Nine moments, ready for your photos, dates, and stories.')+`<div class="grid memory-grid">${MEMORIES.map((m,i)=>`<article class="card memory-card"><button data-memory="${i}"><p class="meta">Memory ${i+1}</p><h3>${m.title}</h3><div class="placeholder">Photo placeholder</div><p>${m.description}</p></button></article>`).join('')}</div>`;
- if(id==='photos')return title('Photo Planet','Replace these frames with your favourite photos later.')+`<div class="grid photo-grid">${Array.from({length:12},(_,i)=>`<div class="photo-frame" style="--r:${(i%2?2:-2)+(i%3)}deg"><div class="placeholder">Photo ${i+1}</div></div>`).join('')}</div>`;
- if(id==='music')return title('Music Planet','Add legally obtained audio files inside assets/music, or connect your preferred music links.')+`<div class="grid song-list">${SONGS.map((s,i)=>`<article class="card song-card"><div class="song-icon">♫</div><button data-song="${i}"><p class="meta">${s[2]}</p><h3>${s[0]}</h3><p>${s[1]}</p></button></article>`).join('')}</div>`;
- if(id==='laughter')return title('Laughing Planet','The place for all the little things only we understand.')+`<div class="grid memory-grid"><article class="card"><p class="meta">Nickname</p><h3>Pookie</h3><p>One small word that somehow carries a whole world.</p></article><article class="card"><p class="meta">Something you always say</p><h3>“Bagshaa”</h3><p>A tiny phrase that always sounds like you.</p></article>${['Inside jokes','Funny screenshots','Embarrassing moments','Playful arguments'].map(x=>`<article class="card"><p class="meta">Add later</p><h3>${x}</h3><div class="placeholder">Future memory</div></article>`).join('')}</div>`;
- if(id==='future')return title('Future Planet','A home for the dreams we have not lived yet.')+`<div class="grid future-grid">${['Places we will visit','A perfect date','Our next anniversary','Small everyday dreams','A future pet','A promise for this year'].map(x=>`<article class="card future-card"><div><p class="meta">Add later</p><h3>${x}</h3></div></article>`).join('')}</div>`;
- if(id==='letter')return title('Love Letter Moon','This space is ready for the words you will add later.')+`<article class="letter-paper">My love,<br><br>This letter is waiting for the words only you can write. Replace this placeholder when you are ready.<small>— Always yours</small></article>`;
- if(id==='birthday')return title('Happy 19th Birthday','You make my universe brighter simply by being in it.')+`<div class="cake-scene"><p>I hope this year brings you the same happiness, love, and warmth that you bring into my life every day.</p><div class="cake"><div class="candles">${Array.from({length:19},()=>`<span class="candle"><i class="flame"></i></span>`).join('')}</div></div><p id="wishText">Make a wish, then blow out the candles.</p><div class="birthday-actions"><button id="micBtn" class="primary-btn">Use Microphone</button><button id="blowBtn" class="ghost-btn">Tap to Blow Out</button></div></div>`;
-}
-function bindSection(id){
- if(id==='memories')$$('[data-memory]').forEach(b=>b.onclick=()=>toast('Edit this memory inside js/data.js.'));
- if(id==='music')$$('[data-song]').forEach((b,i)=>b.onclick=()=>toast(`Add track ${i+1} to assets/music and connect it in app.js.`));
- if(id==='birthday'){setTimeout(()=>{$('#blowBtn').onclick=celebrate;$('#micBtn').onclick=startMic},0)}
-}
-async function startMic(){
- try{micStream=await navigator.mediaDevices.getUserMedia({audio:true});audioCtx=new AudioContext();analyser=audioCtx.createAnalyser();analyser.fftSize=512;audioCtx.createMediaStreamSource(micStream).connect(analyser);const data=new Uint8Array(analyser.frequencyBinCount);let strong=0;const tick=()=>{analyser.getByteFrequencyData(data);const avg=data.reduce((a,b)=>a+b,0)/data.length;strong=avg>42?strong+1:Math.max(0,strong-1);if(strong>6){celebrate();stopMic();return}micRaf=requestAnimationFrame(tick)};tick();toast('Microphone ready. Blow toward it.')}catch{toast('Microphone access was blocked. Use the button instead.')}
-}
-function stopMic(){if(micRaf)cancelAnimationFrame(micRaf);micStream?.getTracks().forEach(t=>t.stop());audioCtx?.close?.();micStream=audioCtx=analyser=null}
-function celebrate(){const candles=$$('.candle');candles.forEach((c,i)=>setTimeout(()=>c.classList.add('out'),i*55));setTimeout(()=>{$('#wishText').textContent='Your wish is on its way. Happy 19th Birthday!';launchConfetti();launchFireworks();launchBalloons()},1100)}
-function launchConfetti(){for(let i=0;i<120;i++){const e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=`hsl(${Math.random()*360} 90% 70%)`;e.style.setProperty('--d',2+Math.random()*3+'s');e.style.setProperty('--x',(Math.random()*220-110)+'px');document.body.appendChild(e);setTimeout(()=>e.remove(),5200)}}
-function launchFireworks(){for(let i=0;i<8;i++)setTimeout(()=>{const e=document.createElement('i');e.className='firework';e.style.left=15+Math.random()*70+'vw';e.style.top=12+Math.random()*55+'vh';document.body.appendChild(e);setTimeout(()=>e.remove(),1500)},i*260)}
-function launchBalloons(){for(let i=0;i<18;i++){const e=document.createElement('i');e.className='balloon';e.style.left=Math.random()*95+'vw';e.style.setProperty('--d',4+Math.random()*4+'s');e.style.filter=`hue-rotate(${Math.random()*180}deg)`;document.body.appendChild(e);setTimeout(()=>e.remove(),8500)}}
-
-function createReasonStars(){
-  const popup=$('#reasonPopup'),message=$('#reasonMessage'),number=$('#reasonNumber'),count=$('#reasonCount');
-  const reserved=[{x:18,y:28,r:11},{x:70,y:23,r:10},{x:48,y:50,r:11},{x:82,y:60,r:9},{x:60,y:78,r:10},{x:10,y:48,r:10},{x:88,y:34,r:12}];
-  let seed=7319;const rand=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
-  for(let i=0;i<REASONS.length;i++){
-    let x,y,tries=0;do{x=4+rand()*92;y=7+rand()*86;tries++}while(tries<80&&reserved.some(p=>Math.hypot(x-p.x,y-p.y)<p.r));
-    const b=document.createElement('button');b.className='love-star';b.type='button';b.dataset.reason=i;b.setAttribute('aria-label',`Reason ${i+1}`);b.style.left=x+'%';b.style.top=y+'%';b.style.setProperty('--s',(.65+rand()*.85).toFixed(2));b.style.setProperty('--o',(.55+rand()*.45).toFixed(2));
-    b.onclick=e=>{e.stopPropagation();openedReasons.add(i);b.classList.add('opened');count.textContent=openedReasons.size;number.textContent=`Star ${i+1} of 100`;message.textContent=REASONS[i];popup.classList.add('open');popup.setAttribute('aria-hidden','false');if(openedReasons.size===100)setTimeout(()=>toast('And somehow, this still is not every reason.'),500)};
-    world.appendChild(b);
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
   }
-  $('#closeReason').onclick=()=>{popup.classList.remove('open');popup.setAttribute('aria-hidden','true')};
-}
-createReasonStars();
-$('#secretCapy').onclick=()=>toast('You found the space capybara.');$('#secretDog').onclick=()=>toast('A tiny guardian is watching over this universe.');$('#secretTulip').onclick=()=>toast('A tulip for the brightest person in this universe.');
 
-(function initSpace(){if(!window.THREE)return;const canvas=$('#universe'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,2000),renderer=new THREE.WebGLRenderer({canvas,antialias:false,alpha:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));renderer.setSize(innerWidth,innerHeight);camera.position.z=7;const geo=new THREE.BufferGeometry(),count=innerWidth<800?700:1200,pos=new Float32Array(count*3),col=new Float32Array(count*3);for(let i=0;i<count;i++){const r=80*Math.cbrt(Math.random()),t=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1);pos[i*3]=r*Math.sin(p)*Math.cos(t);pos[i*3+1]=r*Math.sin(p)*Math.sin(t);pos[i*3+2]=r*Math.cos(p);const purple=Math.random()>.7;col[i*3]=purple?.8:1;col[i*3+1]=purple?.55:.92;col[i*3+2]=1}geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.095,vertexColors:true,transparent:true,opacity:.92,sizeAttenuation:true}));scene.add(pts);let last=0;function animate(now){requestAnimationFrame(animate);if(document.hidden||now-last<33)return;last=now;pts.rotation.y+=.00018;renderer.render(scene,camera)}animate(0);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)})})();
+  function clamp(num, min, max) { return Math.min(max, Math.max(min, num)); }
+
+  function updateCounter() {
+    starCounter.textContent = `${openedStars.size} / 100 stars`;
+  }
+
+  function openWelcomeToIntro(requestFullscreen = false) {
+    if (requestFullscreen && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    welcome.classList.remove('active');
+    setTimeout(() => intro.classList.add('active'), 250);
+    startMusic();
+  }
+
+  function startMusic() {
+    if (musicEnabled) return;
+    musicEnabled = true;
+    backgroundAudio.volume = 0.45;
+    backgroundAudio.play().catch(() => {});
+  }
+
+  function fadeOutMusic(cb) {
+    const step = () => {
+      if (backgroundAudio.volume > 0.03) {
+        backgroundAudio.volume = Math.max(0, backgroundAudio.volume - 0.04);
+        requestAnimationFrame(step);
+      } else {
+        backgroundAudio.pause();
+        cb && cb();
+      }
+    };
+    step();
+  }
+
+  function beginWorld() {
+    intro.classList.remove('active');
+    hud.classList.remove('hidden');
+    worldViewport.classList.remove('hidden');
+    setTimeout(() => applyTransform(), 50);
+  }
+
+  fullscreenStart.addEventListener('click', () => openWelcomeToIntro(true));
+  regularStart.addEventListener('click', () => openWelcomeToIntro(false));
+  beginStory.addEventListener('click', beginWorld);
+
+  function applyTransform() {
+    world.style.transform = `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.scale})`;
+  }
+
+  function isInteractiveTarget(target) {
+    return target.closest('button, a, .content-panel, .side-menu');
+  }
+
+  worldViewport.addEventListener('pointerdown', (e) => {
+    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size === 2) {
+      const pts = [...activePointers.values()];
+      pinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      return;
+    }
+    dragging = true;
+    dragStartedOnButton = !!isInteractiveTarget(e.target);
+    startPointer = { x: e.clientX, y: e.clientY };
+    lastPointer = { x: e.clientX, y: e.clientY };
+    moved = 0;
+    worldViewport.classList.add('dragging');
+  }, { passive: true });
+
+  worldViewport.addEventListener('pointermove', (e) => {
+    if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (activePointers.size === 2) {
+      const pts = [...activePointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (pinchDist) {
+        const delta = (dist - pinchDist) * 0.0025;
+        view.scale = clamp(view.scale + delta, minScale, maxScale);
+        applyTransform();
+      }
+      pinchDist = dist;
+      return;
+    }
+    if (!dragging || dragStartedOnButton) return;
+    const dx = e.clientX - lastPointer.x;
+    const dy = e.clientY - lastPointer.y;
+    moved += Math.abs(dx) + Math.abs(dy);
+    lastPointer = { x: e.clientX, y: e.clientY };
+    view.x += dx;
+    view.y += dy;
+    applyTransform();
+  }, { passive: true });
+
+  function endPointer(e) {
+    activePointers.delete(e.pointerId);
+    if (activePointers.size < 2) pinchDist = 0;
+    dragging = false;
+    worldViewport.classList.remove('dragging');
+  }
+  worldViewport.addEventListener('pointerup', endPointer, { passive: true });
+  worldViewport.addEventListener('pointercancel', endPointer, { passive: true });
+  worldViewport.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    view.scale = clamp(view.scale + delta, minScale, maxScale);
+    applyTransform();
+  }, { passive: false });
+
+  const sections = {
+    memories: {
+      title: 'Memory Constellation',
+      subtitle: 'Nine stars ready for your most important moments.',
+      html: () => `<div class="memory-grid">${data.memories.map(m => `<article class="card"><h3>${m.title}</h3><p><strong>Date:</strong> ${m.date || 'Add later'}</p><p><strong>Location:</strong> ${m.location || 'Add later'}</p><p>${m.description}</p></article>`).join('')}</div>`
+    },
+    photos: {
+      title: 'Photo Planet',
+      subtitle: 'Add your favorite pictures later.',
+      html: () => `<div class="photo-grid">${data.photos.map((p, i) => `<article class="card"><div class="photo-slot">Photo ${i + 1}</div><p>${p.caption}</p></article>`).join('')}</div>`
+    },
+    music: {
+      title: 'Music Planet',
+      subtitle: 'Songs connected to your story.',
+      html: () => `<div class="song-list">${data.songs.map(([song, artist], i) => `<article class="card"><strong>${i + 1}. ${song}</strong><p>${artist}</p></article>`).join('')}</div><p class="constellation-note">Add actual audio files inside assets/music later.</p>`
+    },
+    laughter: {
+      title: 'Laughing Planet',
+      subtitle: 'The playful side of your story.',
+      html: () => `<div class="laugh-grid">${data.laughter.map(item => `<article class="card"><h3>${item.title}</h3><p>${item.description}</p></article>`).join('')}</div>`
+    },
+    future: {
+      title: 'Future Planet',
+      subtitle: 'The dreams still waiting for both of you.',
+      html: () => `<div class="future-grid">${data.future.map(item => `<article class="card"><h3>${item}</h3><p>Add your notes later.</p></article>`).join('')}</div>`
+    },
+    letter: {
+      title: 'Love Letter Moon',
+      subtitle: 'A place for your letter.',
+      html: () => `<article class="card"><h3>${data.letterTitle}</h3><p>${data.letterBody}</p></article>`
+    }
+  };
+
+  function openPanel(key) {
+    const section = sections[key];
+    if (!section) return;
+    locationLabel.textContent = section.title;
+    panelContent.innerHTML = `<h2 class="panel-title">${section.title}</h2><p class="panel-subtitle">${section.subtitle}</p>${section.html()}`;
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+  }
+  function closeContentPanel() {
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    locationLabel.textContent = 'Our Little Universe';
+  }
+  closePanel.addEventListener('click', closeContentPanel);
+
+  function openStar(index) {
+    const reason = data.reasons[index];
+    openedStars.add(index);
+    localStorage.setItem('openedStars', JSON.stringify([...openedStars]));
+    updateCounter();
+    const starEl = starsLayer.querySelector(`[data-star-index="${index}"]`);
+    if (starEl) starEl.classList.add('opened');
+    starContent.innerHTML = `
+      <div class="reason-body">
+        <p class="reason-number">Star ${index + 1} of 100</p>
+        <h2 class="reason-text">${reason}</h2>
+        <p class="reason-foot">A little reason written among the stars.</p>
+      </div>
+    `;
+    starModal.classList.add('open');
+    starModal.setAttribute('aria-hidden', 'false');
+    if (openedStars.size === 100) showToast('And somehow, this still is not every reason.');
+  }
+  function closeStar() {
+    starModal.classList.remove('open');
+    starModal.setAttribute('aria-hidden', 'true');
+  }
+  closeStarModal.addEventListener('click', closeStar);
+
+  function generateStars() {
+    const positions = [];
+    const planets = [...document.querySelectorAll('.planet')].map(p => ({
+      x: parseFloat(p.style.getPropertyValue('--x')),
+      y: parseFloat(p.style.getPropertyValue('--y')),
+      r: parseFloat(p.style.getPropertyValue('--size')) / 14
+    }));
+    for (let i = 0; i < 100; i++) {
+      let attempts = 0;
+      let x, y, okay;
+      do {
+        x = 4 + Math.random() * 92;
+        y = 4 + Math.random() * 92;
+        okay = planets.every(pl => Math.hypot(x - pl.x, y - pl.y) > pl.r + 3) && positions.every(pos => Math.hypot(x - pos.x, y - pos.y) > 5.4);
+        attempts++;
+      } while (!okay && attempts < 200);
+      positions.push({ x, y });
+      const btn = document.createElement('button');
+      btn.className = 'star-point';
+      btn.style.left = `${x}%`;
+      btn.style.top = `${y}%`;
+      const size = 36 + Math.round(Math.random() * 18);
+      btn.style.setProperty('--size', `${size}px`);
+      btn.dataset.starIndex = i;
+      if (openedStars.has(i)) btn.classList.add('opened');
+      btn.setAttribute('aria-label', `Open star message ${i + 1}`);
+      btn.innerHTML = '<span class="star-halo"></span><span class="star-core"></span><span class="star-label-small">Click me</span>';
+      btn.addEventListener('click', (e) => {
+        if (moved > 9) return;
+        e.stopPropagation();
+        openStar(i);
+      });
+      starsLayer.appendChild(btn);
+    }
+  }
+
+  function enterBirthdayPlanet() {
+    transition.classList.add('active');
+    fadeOutMusic(() => {});
+    setTimeout(() => window.location.href = 'birthday-scene.html', 1700);
+  }
+
+  function buildDestinations() {
+    const items = [
+      ['memories', 'Memory Constellation'],
+      ['photos', 'Photo Planet'],
+      ['music', 'Music Planet'],
+      ['laughter', 'Laughing Planet'],
+      ['future', 'Future Planet'],
+      ['letter', 'Love Letter Moon'],
+      ['birthday', 'Birthday Planet']
+    ];
+    destinationList.innerHTML = '';
+    items.forEach(([key, label]) => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-link';
+      btn.innerHTML = `<span>${label}</span><span>→</span>`;
+      btn.addEventListener('click', () => {
+        sideMenu.classList.remove('open');
+        if (key === 'birthday') enterBirthdayPlanet();
+        else openPanel(key);
+      });
+      destinationList.appendChild(btn);
+    });
+  }
+
+  document.querySelectorAll('.planet').forEach(planet => {
+    planet.addEventListener('click', (e) => {
+      if (moved > 9) return;
+      const key = planet.dataset.section;
+      if (key === 'birthday') enterBirthdayPlanet();
+      else openPanel(key);
+      e.stopPropagation();
+    });
+  });
+
+  menuBtn.addEventListener('click', () => sideMenu.classList.add('open'));
+  closeMenu.addEventListener('click', () => sideMenu.classList.remove('open'));
+  musicToggle.addEventListener('click', () => {
+    if (backgroundAudio.paused) {
+      backgroundAudio.play().catch(() => showToast('Add assets/music/background.mp3 first.'));
+      musicToggle.textContent = '♫';
+    } else {
+      backgroundAudio.pause();
+      musicToggle.textContent = '♬';
+    }
+  });
+  fullscreenToggle.addEventListener('click', () => {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+    else if (document.exitFullscreen) document.exitFullscreen();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeContentPanel(); closeStar(); sideMenu.classList.remove('open');
+    }
+    if (e.key === '+' || e.key === '=') { view.scale = clamp(view.scale + 0.06, minScale, maxScale); applyTransform(); }
+    if (e.key === '-' || e.key === '_') { view.scale = clamp(view.scale - 0.06, minScale, maxScale); applyTransform(); }
+    if (e.key === 'ArrowLeft') { view.x += 30; applyTransform(); }
+    if (e.key === 'ArrowRight') { view.x -= 30; applyTransform(); }
+    if (e.key === 'ArrowUp') { view.y += 30; applyTransform(); }
+    if (e.key === 'ArrowDown') { view.y -= 30; applyTransform(); }
+  });
+
+  updateCounter();
+  generateStars();
+  buildDestinations();
+
+  if (window.location.hash === '#birthday-planet') {
+    welcome.classList.remove('active');
+    intro.classList.remove('active');
+    hud.classList.remove('hidden');
+    worldViewport.classList.remove('hidden');
+    view = { x: -180, y: 60, scale: 1.12 };
+    applyTransform();
+    startMusic();
+    showToast('Welcome back to the Birthday Planet.');
+  }
+
+  // lightweight background star canvas
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let stars = [];
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.4);
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    canvas.style.width = `${innerWidth}px`;
+    canvas.style.height = `${innerHeight}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = Array.from({ length: innerWidth < 700 ? 160 : 240 }, () => ({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
+      r: Math.random() * 1.8 + 0.2,
+      a: Math.random(),
+      s: Math.random() * 0.008 + 0.002
+    }));
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  let lastFrame = 0;
+  function animateBg(ts) {
+    requestAnimationFrame(animateBg);
+    if (document.hidden) return;
+    if (ts - lastFrame < 40) return; // ~25 fps for less lag
+    lastFrame = ts;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const star of stars) {
+      star.a += star.s;
+      if (star.a >= 1 || star.a <= 0.2) star.s *= -1;
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,255,255,${star.a})`;
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  requestAnimationFrame(animateBg);
+})();
