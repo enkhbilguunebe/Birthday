@@ -35,7 +35,7 @@ const instructions = document.getElementById('instructions');
 const isMobile = matchMedia('(max-width: 850px)').matches;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const savedQuality = localStorage.getItem('birthdayQuality');
-let lowQuality = savedQuality === 'low' || (savedQuality !== 'high' && (isMobile || (navigator.deviceMemory && navigator.deviceMemory <= 4)));
+let lowQuality = savedQuality === 'low' || (savedQuality !== 'high' && (isMobile || (navigator.deviceMemory && navigator.deviceMemory <= 6) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 8)));
 let animationsPaused = false;
 let scene, camera, renderer, controls, clock;
 let tableGroup, cakeGroup, candleGroup, cityGroup;
@@ -129,12 +129,12 @@ function setupFallbackPhotos() {
 async function init() {
   updateProgress(5, 'Starting the 3D renderer…');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowQuality, powerPreference: 'high-performance', alpha: false });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1.25 : 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1 : 1.3));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  renderer.shadowMap.enabled = !lowQuality;
+  renderer.shadowMap.enabled = false;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   scene = new THREE.Scene();
@@ -147,9 +147,9 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 2.4, 0);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.055;
-  controls.rotateSpeed = 0.55;
-  controls.zoomSpeed = 0.72;
+  controls.dampingFactor = 0.14;
+  controls.rotateSpeed = 0.72;
+  controls.zoomSpeed = 0.9;
   controls.panSpeed = 0.5;
   controls.enablePan = false;
   controls.minDistance = 8.2;
@@ -188,7 +188,7 @@ async function init() {
 }
 
 function createPanoramaTexture() {
-  const width = lowQuality ? 2048 : 3072;
+  const width = lowQuality ? 1280 : 1920;
   const height = width / 2;
   const c = document.createElement('canvas');
   c.width = width;
@@ -216,7 +216,7 @@ function createPanoramaTexture() {
     ctx.fillRect(0, 0, width, height * 0.65);
   }
 
-  const starCount = lowQuality ? 420 : 760;
+  const starCount = lowQuality ? 220 : 420;
   for (let i = 0; i < starCount; i++) {
     const x = Math.random() * width;
     const y = Math.random() * height * 0.58;
@@ -236,7 +236,7 @@ function createPanoramaTexture() {
   ctx.fillRect(0, horizon, width, height - horizon);
 
   const skylineBase = horizon + 8;
-  const buildingCount = lowQuality ? 100 : 150;
+  const buildingCount = lowQuality ? 72 : 110;
   const buildings = [];
   for (let i = 0; i < buildingCount; i++) {
     const x = (i / buildingCount) * width;
@@ -298,7 +298,7 @@ function createPanoramaTexture() {
 
 function createPanorama() {
   const texture = createPanoramaTexture();
-  const geometry = new THREE.SphereGeometry(90, lowQuality ? 48 : 72, lowQuality ? 24 : 36);
+  const geometry = new THREE.SphereGeometry(90, lowQuality ? 32 : 48, lowQuality ? 16 : 24);
   geometry.scale(-1, 1, 1);
   const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, fog: false });
   const sphere = new THREE.Mesh(geometry, material);
@@ -308,7 +308,7 @@ function createPanorama() {
   cityGroup = new THREE.Group();
   scene.add(cityGroup);
   const cityColors = [0xff78c9, 0x8a9fff, 0xffc66f, 0xffffff];
-  const lightCount = lowQuality ? 16 : 28;
+  const lightCount = lowQuality ? 8 : 14;
   for (let i = 0; i < lightCount; i++) {
     const angle = (i / lightCount) * Math.PI * 2;
     const radius = 34 + Math.random() * 5;
@@ -1169,7 +1169,7 @@ function markUiActive() {
 function onResize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1.25 : 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 1 : 1.3));
   renderer.setSize(innerWidth, innerHeight, false);
 }
 function onKeyDown(event) {
@@ -1189,7 +1189,9 @@ function onKeyDown(event) {
 function animate(time = 0) {
   requestAnimationFrame(animate);
   if (document.hidden) return;
-  const delta = clock.getDelta();
+  const targetInterval = lowQuality ? 33 : 22;
+  if (time - lastTime < targetInterval) return;
+  const delta = Math.min(clock.getDelta(), 0.05);
   controls.update();
   sampleMicrophone();
 
@@ -1197,19 +1199,17 @@ function animate(time = 0) {
     for (const candle of candleState) {
       if (!candle.out) {
         candle.phase += delta * 4.2;
-        candle.flame.scale.x = 0.20 + Math.sin(candle.phase) * 0.014;
-        candle.flame.scale.y = 0.33 + Math.cos(candle.phase * 1.2) * 0.022;
-        candle.flame.position.y = 0.92 + Math.sin(candle.phase * 0.8) * 0.012;
+        candle.flame.scale.x = 0.20 + Math.sin(candle.phase) * 0.012;
+        candle.flame.scale.y = 0.33 + Math.cos(candle.phase * 1.2) * 0.018;
       } else if (candle.smoke) {
         candle.smoke.age += delta;
         candle.smoke.sprite.position.y += delta * 0.18;
         candle.smoke.sprite.material.opacity = Math.max(0, 1 - candle.smoke.age / 2.2);
-        candle.smoke.sprite.scale.multiplyScalar(1 + delta * 0.12);
       }
     }
-    for (let i = 0; i < cityGroup.children.length; i++) {
+    for (let i = 0; i < cityGroup.children.length; i += 2) {
       const light = cityGroup.children[i];
-      light.material.opacity = 0.65 + Math.sin(time * 0.0015 + light.userData.phase) * 0.22;
+      light.material.opacity = 0.68 + Math.sin(time * 0.0012 + light.userData.phase) * 0.18;
       light.material.transparent = true;
     }
   }
