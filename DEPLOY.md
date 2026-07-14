@@ -1,8 +1,6 @@
-Use GitHub Pages:
-1. Create a repository.
-2. Upload all files from this folder to the repository root.
-3. Go to Settings > Pages.
-4. Source: Deploy from a branch.
-5. Branch: main.
-6. Folder: / (root).
-7. Save and wait.
+1. Extract the ZIP.
+2. Upload every extracted file and folder directly to the root of the GitHub repository.
+3. Open Repository Settings > Pages.
+4. Select Deploy from a branch.
+5. Select `main` and `/ (root)`.
+6. Save and wait for deployment.

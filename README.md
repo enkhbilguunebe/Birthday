@@ -1,36 +1,48 @@
 # Our Story Among the Stars
 
-Upload all files in this folder directly to the root of your GitHub repository.
+This package keeps the existing explorable universe and adds a dedicated Three.js Birthday Planet page.
 
-## Important structure
+## GitHub Pages structure
+
+Upload the contents of this folder directly to the repository root:
 
 - `index.html`
 - `birthday-scene.html`
+- `.nojekyll`
+- `404.html`
 - `css/`
 - `js/`
 - `assets/`
-- `.nojekyll`
-- `404.html`
 
-## Optional music files
+GitHub Pages settings:
 
-Put your music here:
+- Source: Deploy from a branch
+- Branch: `main`
+- Folder: `/ (root)`
 
-- `assets/music/background.mp3`
-- `assets/music/birthday.mp3`
+## Music
 
-If the files are missing, the website still works.
+Add audio files here:
 
-## Editable content
+- `assets/music/background.mp3` — universe and soft birthday-table ambience
+- `assets/music/birthday.mp3` — starts after all 19 candles are blown out
 
-Edit `js/data.js` to change:
+Missing music does not stop the website.
 
-- memories
-- reasons
-- future plans
-- laughter content
-- love letter
+## Photos
 
-## Photo frames
+Tap any 3D frame on `birthday-scene.html` to choose a photo. Photos and crop settings are stored in IndexedDB on that browser.
 
-Photos added on the birthday page are saved in the browser using localStorage.
+## Performance
+
+The Birthday Planet automatically starts in lower-quality mode on most phones and lower-memory devices. Use the **Quality** button to switch manually. The preference is saved in the browser.
+
+## Testing locally
+
+Because the Birthday Planet uses JavaScript modules, test through a local web server rather than opening the HTML file directly. For example:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://localhost:8000`.

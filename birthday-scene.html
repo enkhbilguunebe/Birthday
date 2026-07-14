@@ -3,90 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <meta name="theme-color" content="#140821" />
+  <meta name="theme-color" content="#100717" />
   <title>Birthday Planet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/birthday-scene.css" />
+  <script type="importmap">
+  {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"}}
+  </script>
 </head>
 <body>
   <div id="loading" class="loading-screen active" role="status" aria-live="polite">
-    <div class="loader-orbit"><span></span><i></i></div>
+    <div class="cake-silhouette" aria-hidden="true"><span></span><i></i></div>
     <p class="eyebrow">Birthday Planet</p>
     <h1>Preparing your birthday table…</h1>
     <div class="loading-track"><b id="loadingBar"></b></div>
-    <p id="loadingText">0%</p>
+    <p id="loadingText">Starting…</p>
   </div>
 
-  <div id="sceneViewport" class="scene-viewport" aria-label="Interactive birthday scene">
-    <div id="sceneRoot" class="scene-root">
-      <div class="scene-space">
-        <div class="sky"></div>
-        <div class="cityline cityline-back"></div>
-        <div class="cityline cityline-mid"></div>
-        <div class="water"></div>
-        <div class="sparkle-layer" id="sparkles"></div>
+  <canvas id="birthdayCanvas" aria-label="Interactive 3D birthday table"></canvas>
+  <div id="effects" aria-hidden="true"></div>
 
-        <div class="table-scene">
-          <div class="table-top"></div>
-          <div class="card note-card">Happy Birthday</div>
-
-          <button class="frame frame-1" data-frame="0"><span>Add a memory</span><img alt="Frame 1"></button>
-          <button class="frame frame-2" data-frame="1"><span>Add a memory</span><img alt="Frame 2"></button>
-          <button class="frame frame-3" data-frame="2"><span>Add a memory</span><img alt="Frame 3"></button>
-          <button class="frame frame-4" data-frame="3"><span>Add a memory</span><img alt="Frame 4"></button>
-          <button class="frame frame-5" data-frame="4"><span>Add a memory</span><img alt="Frame 5"></button>
-
-          <div class="cake-wrap">
-            <div id="cake" class="cake" aria-label="Birthday cake">
-              <div class="plate"></div>
-              <div class="cake-shadow"></div>
-              <div class="cake-body">
-                <div class="layer cocoa top"></div>
-                <div class="layer cream l1"></div>
-                <div class="layer sponge s1"></div>
-                <div class="layer cream l2"></div>
-                <div class="layer sponge s2"></div>
-                <div class="layer cream l3"></div>
-                <div class="layer sponge s3"></div>
-                <div class="plaque">Happy Birthday</div>
-                <div class="sticks stick-a"></div>
-                <div class="sticks stick-b"></div>
-                <div class="candles" id="candles"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="effects" class="effects" aria-hidden="true"></div>
-
-  <header id="sceneHud" class="scene-hud">
-    <a class="glass-button" href="index.html#birthday-planet">← Return to the Universe</a>
+  <header id="sceneHud" class="scene-hud" aria-label="Birthday scene controls">
+    <a class="glass-button return-button" href="index.html#birthday-planet">← Return to the Universe</a>
     <div class="scene-actions">
-      <button id="focusCake" class="glass-button">Focus on Cake</button>
-      <button id="resetView" class="glass-button">Reset</button>
-      <button id="musicToggle" class="glass-button">♫</button>
-      <button id="fullscreenToggle" class="glass-button">⛶</button>
-      <button id="hideUi" class="glass-button">◌</button>
+      <button id="focusCake" class="glass-button" aria-label="Focus on cake">Focus on Cake</button>
+      <button id="resetView" class="glass-button" aria-label="Reset view">Reset View</button>
+      <button id="pauseAnimation" class="glass-button" aria-label="Pause animations">Pause</button>
+      <button id="qualityToggle" class="glass-button" aria-label="Toggle quality mode">Quality</button>
+      <button id="musicToggle" class="glass-button icon-button" aria-label="Mute or unmute music">♫</button>
+      <label class="volume-control glass-button" aria-label="Music volume"><span>Volume</span><input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.58"></label>
+      <button id="fullscreenToggle" class="glass-button icon-button" aria-label="Toggle fullscreen">⛶</button>
+      <button id="hideUi" class="glass-button icon-button" aria-label="Hide controls">◌</button>
     </div>
   </header>
 
-  <section id="birthdayMessage" class="message-card glass-panel">
+  <section id="birthdayMessage" class="message-card glass-panel" aria-modal="true" role="dialog">
     <p class="eyebrow">The final destination</p>
     <h1>Happy 19th Birthday.</h1>
     <p>You make my universe brighter simply by being in it.</p>
-    <button id="closeMessage" class="primary-button">Enter the Celebration</button>
+    <button id="enterCelebration" class="primary-button">Enter the Celebration</button>
   </section>
 
   <section id="candlePanel" class="candle-panel glass-panel" aria-label="Birthday candle controls">
-    <p id="candleStatus">Make a wish, then blow out the 19 candles.</p>
-    <div class="candle-buttons">
-      <button id="micButton" class="primary-button">Allow Microphone</button>
-      <button id="blowButton" class="secondary-button">Tap to Blow Out</button>
+    <p id="candleStatus" aria-live="polite">Make a wish, then blow out the 19 candles.</p>
+    <div class="button-row">
+      <button id="micButton" class="primary-button">Allow Microphone to Blow Out the Candles</button>
+      <button id="blowButton" class="secondary-button">Tap to Blow Out the Candles</button>
       <button id="relightButton" class="secondary-button hidden">Light the Candles Again</button>
     </div>
     <div id="micMeter" class="mic-meter" aria-hidden="true"><span></span></div>
@@ -98,18 +62,35 @@
     <button id="closeFrameEditor" class="editor-close" aria-label="Close photo editor">×</button>
     <p class="eyebrow">Memory Frame</p>
     <h2 id="frameTitle">Photo Frame</h2>
-    <p>Choose a photo and it will stay here in this birthday scene.</p>
-    <div class="editor-actions">
+    <div class="editor-grid">
+      <label>Zoom<input id="cropZoom" type="range" min="1" max="3" step="0.01" value="1"></label>
+      <label>Move horizontally<input id="cropX" type="range" min="-1" max="1" step="0.01" value="0"></label>
+      <label>Move vertically<input id="cropY" type="range" min="-1" max="1" step="0.01" value="0"></label>
+    </div>
+    <div class="button-row">
       <button id="replacePhoto" class="primary-button">Choose / Replace Photo</button>
+      <button id="resetCrop" class="secondary-button">Reset Crop</button>
       <button id="removePhoto" class="secondary-button">Remove Photo</button>
     </div>
   </aside>
 
+  <section id="webglFallback" class="fallback hidden" aria-live="polite">
+    <div class="glass-panel fallback-card">
+      <h1>3D mode is unavailable on this device.</h1>
+      <p>You can still read the birthday message, add photos, and use the candle button.</p>
+      <div id="fallbackPhotoGrid" class="fallback-photo-grid"></div>
+      <button id="fallbackChoosePhoto" class="secondary-button">Add a fallback photo</button>
+      <input id="fallbackPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <button id="fallbackBlow" class="primary-button">Tap to Blow Out the Candles</button>
+    </div>
+  </section>
+
   <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden />
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <audio id="birthdayMusic" loop preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
+  <audio id="ambientMusic" loop preload="none"><source src="assets/music/background.mp3" type="audio/mpeg"></audio>
+  <audio id="birthdayMusic" preload="none"><source src="assets/music/birthday.mp3" type="audio/mpeg"></audio>
 
-  <script src="js/birthday-scene.js"></script>
+  <script type="module" src="js/birthday-scene.js"></script>
 </body>
 </html>
