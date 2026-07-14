@@ -248,12 +248,12 @@
       btn.className = 'star-point';
       btn.style.left = `${x}%`;
       btn.style.top = `${y}%`;
-      const size = 36 + Math.round(Math.random() * 18);
+      const size = 42 + Math.round(Math.random() * 18);
       btn.style.setProperty('--size', `${size}px`);
       btn.dataset.starIndex = i;
       if (openedStars.has(i)) btn.classList.add('opened');
       btn.setAttribute('aria-label', `Open star message ${i + 1}`);
-      btn.innerHTML = '<span class="star-halo"></span><span class="star-core"></span><span class="star-label-small">Click me</span>';
+      btn.innerHTML = `<span class="star-halo"></span><span class="star-core"></span><span class="star-label-small">✦ ${i + 1}</span>`;
       btn.addEventListener('click', (e) => {
         if (moved > 9) return;
         e.stopPropagation();
@@ -357,7 +357,7 @@
     canvas.style.width = `${innerWidth}px`;
     canvas.style.height = `${innerHeight}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    stars = Array.from({ length: innerWidth < 700 ? 160 : 240 }, () => ({
+    stars = Array.from({ length: innerWidth < 700 ? 110 : 170 }, () => ({
       x: Math.random() * innerWidth,
       y: Math.random() * innerHeight,
       r: Math.random() * 1.8 + 0.2,
@@ -372,7 +372,7 @@
   function animateBg(ts) {
     requestAnimationFrame(animateBg);
     if (document.hidden) return;
-    if (ts - lastFrame < 40) return; // ~25 fps for less lag
+    if (ts - lastFrame < 55) return; // ~18 fps for less lag
     lastFrame = ts;
     ctx.clearRect(0, 0, innerWidth, innerHeight);
     for (const star of stars) {
