@@ -34,8 +34,7 @@ const instructions = document.getElementById('instructions');
 
 const isMobile = matchMedia('(max-width: 850px)').matches;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const savedQuality = localStorage.getItem('birthdayQuality');
-let lowQuality = savedQuality === 'low' || (savedQuality !== 'high' && (isMobile || (navigator.deviceMemory && navigator.deviceMemory <= 6) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 8)));
+const lowQuality = false;
 let animationsPaused = false;
 let scene, camera, renderer, controls, clock;
 let tableGroup, cakeGroup, candleGroup, cityGroup;
@@ -559,12 +558,13 @@ function makeFrame(index, position, rotation, scale = 1) {
 }
 
 async function createPhotoFrames() {
+  // Repositioned so every frame clearly rests on the table and stays away from the cake volume.
   const specs = [
-    [new THREE.Vector3(-4.15, 1.96, 1.55), new THREE.Euler(-0.02, 0.40, -0.08), 0.76],
-    [new THREE.Vector3(-2.55, 1.90, 0.62), new THREE.Euler(-0.02, 0.24, -0.03), 0.82],
-    [new THREE.Vector3(0, 2.10, -1.95), new THREE.Euler(0.00, 0, 0), 0.60],
-    [new THREE.Vector3(2.55, 1.90, 0.62), new THREE.Euler(-0.02, -0.24, 0.03), 0.82],
-    [new THREE.Vector3(4.15, 1.96, 1.55), new THREE.Euler(-0.02, -0.40, 0.08), 0.76]
+    [new THREE.Vector3(-4.35, 1.95, 2.05), new THREE.Euler(-0.02, 0.42, -0.08), 0.72],
+    [new THREE.Vector3(-2.95, 1.92, 1.40), new THREE.Euler(-0.02, 0.26, -0.03), 0.78],
+    [new THREE.Vector3(0, 2.08, -2.55), new THREE.Euler(0.00, 0, 0), 0.54],
+    [new THREE.Vector3(2.95, 1.92, 1.40), new THREE.Euler(-0.02, -0.26, 0.03), 0.78],
+    [new THREE.Vector3(4.35, 1.95, 2.05), new THREE.Euler(-0.02, -0.42, 0.08), 0.72]
   ];
   specs.forEach((s, i) => scene.add(makeFrame(i, s[0], s[1], s[2])));
 }
@@ -835,9 +835,6 @@ function setupEvents() {
   document.getElementById('fullscreenToggle').addEventListener('click', toggleFullscreen);
   document.getElementById('musicToggle').addEventListener('click', toggleMusic);
   document.getElementById('pauseAnimation').addEventListener('click', toggleAnimation);
-  const qualityButton = document.getElementById('qualityToggle');
-  qualityButton.textContent = lowQuality ? 'Quality: Low' : 'Quality: High';
-  qualityButton.addEventListener('click', () => { localStorage.setItem('birthdayQuality', lowQuality ? 'high' : 'low'); location.reload(); });
   document.getElementById('hideUi').addEventListener('click', toggleUi);
   document.getElementById('volumeSlider').addEventListener('input', updateVolume);
   enterCelebration.addEventListener('click', enterScene);
