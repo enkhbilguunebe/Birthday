@@ -56,3 +56,7 @@
   .star-point { filter:drop-shadow(0 0 4px rgba(255,255,255,.7)); }
   .planet::after { filter:blur(6px); }
 }
+.world-viewport.dragging .planet-label,
+.world-viewport.dragging .star-label-small { opacity: 0 !important; }
+.world-viewport.dragging ~ .hud,
+.world-viewport.dragging ~ .content-panel { backdrop-filter: none !important; }

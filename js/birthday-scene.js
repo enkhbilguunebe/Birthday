@@ -51,6 +51,7 @@ let microphoneStream = null;
 let microphoneContext = null;
 let microphoneAnalyser = null;
 let microphoneData = null;
+let microphoneFreqData = null;
 let microphoneActive = false;
 let sustainedBlowFrames = 0;
 let microphoneNoiseFloor = 0.008;
@@ -132,7 +133,7 @@ function setupFallbackPhotos() {
 async function init() {
   updateProgress(5, 'Starting the 3D renderer…');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowQuality, powerPreference: 'high-performance', alpha: false });
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.85 : 1.15));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.78 : 1.0));
   renderer.setSize(innerWidth, innerHeight, false);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -150,17 +151,17 @@ async function init() {
   controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 2.4, 0);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.075;
-  controls.rotateSpeed = 0.88;
+  controls.dampingFactor = 0.055;
+  controls.rotateSpeed = 0.98;
   controls.zoomSpeed = 1.0;
   controls.panSpeed = 0.5;
   controls.enablePan = false;
   controls.minDistance = 8.2;
   controls.maxDistance = 18.5;
-  controls.minPolarAngle = THREE.MathUtils.degToRad(56);
-  controls.maxPolarAngle = THREE.MathUtils.degToRad(104);
-  controls.minAzimuthAngle = -Math.PI * 1.12;
-  controls.maxAzimuthAngle = Math.PI * 1.12;
+  controls.minPolarAngle = THREE.MathUtils.degToRad(58);
+  controls.maxPolarAngle = THREE.MathUtils.degToRad(98);
+  controls.minAzimuthAngle = THREE.MathUtils.degToRad(-60);
+  controls.maxAzimuthAngle = THREE.MathUtils.degToRad(60);
 
   raycaster = new THREE.Raycaster();
   pointer = new THREE.Vector2();
@@ -543,10 +544,14 @@ function makeFrame(index, position, rotation, scale = 1) {
   photo.userData.isPhotoSurface = true;
   group.add(photo);
 
-  const stand = new THREE.Mesh(new RoundedBoxGeometry(0.2, 1.6, 0.12, 3, 0.04), borderMat);
-  stand.position.set(0, -1.5, -0.48);
-  stand.rotation.x = -0.42;
+  const stand = new THREE.Mesh(new RoundedBoxGeometry(0.18, 1.18, 0.12, 3, 0.04), borderMat);
+  stand.position.set(0, -1.08, -0.42);
+  stand.rotation.x = -0.58;
   group.add(stand);
+
+  const foot = new THREE.Mesh(new RoundedBoxGeometry(0.68, 0.08, 0.34, 3, 0.04), borderMat);
+  foot.position.set(0, -1.76, -0.12);
+  group.add(foot);
 
   interactiveFrames.push(photo);
   frameRecords[index] = { group, photo, canvas, context: canvas.getContext('2d'), image: null, dataUrl: null, zoom: 1, x: 0, y: 0, texture };
@@ -554,13 +559,12 @@ function makeFrame(index, position, rotation, scale = 1) {
 }
 
 async function createPhotoFrames() {
-  // Raised and moved inward so every frame stand rests on the tabletop.
   const specs = [
-    [new THREE.Vector3(-3.65, 2.72, 0.70), new THREE.Euler(-0.03, 0.30, -0.07), 0.78],
-    [new THREE.Vector3(-2.25, 2.70, 0.05), new THREE.Euler(-0.02, 0.18, -0.025), 0.84],
-    [new THREE.Vector3(0, 2.48, -1.52), new THREE.Euler(-0.02, 0, 0), 0.68],
-    [new THREE.Vector3(2.25, 2.70, 0.05), new THREE.Euler(-0.02, -0.18, 0.025), 0.84],
-    [new THREE.Vector3(3.65, 2.72, 0.70), new THREE.Euler(-0.03, -0.30, 0.07), 0.78]
+    [new THREE.Vector3(-4.15, 1.96, 1.55), new THREE.Euler(-0.02, 0.40, -0.08), 0.76],
+    [new THREE.Vector3(-2.55, 1.90, 0.62), new THREE.Euler(-0.02, 0.24, -0.03), 0.82],
+    [new THREE.Vector3(0, 2.10, -1.95), new THREE.Euler(0.00, 0, 0), 0.60],
+    [new THREE.Vector3(2.55, 1.90, 0.62), new THREE.Euler(-0.02, -0.24, 0.03), 0.82],
+    [new THREE.Vector3(4.15, 1.96, 1.55), new THREE.Euler(-0.02, -0.40, 0.08), 0.76]
   ];
   specs.forEach((s, i) => scene.add(makeFrame(i, s[0], s[1], s[2])));
 }
@@ -1057,14 +1061,15 @@ async function startMicrophone() {
     return;
   }
   try {
-    microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
     microphoneContext = new (window.AudioContext || window.webkitAudioContext)();
     await microphoneContext.resume();
     const source = microphoneContext.createMediaStreamSource(microphoneStream);
     microphoneAnalyser = microphoneContext.createAnalyser();
-    microphoneAnalyser.fftSize = 256;
-    microphoneAnalyser.smoothingTimeConstant = 0.12;
+    microphoneAnalyser.fftSize = 512;
+    microphoneAnalyser.smoothingTimeConstant = 0.08;
     microphoneData = new Uint8Array(microphoneAnalyser.fftSize);
+    microphoneFreqData = new Uint8Array(microphoneAnalyser.frequencyBinCount);
     microphoneNoiseFloor = 0.008;
     microphoneCalibrationFrames = 0;
     sustainedBlowFrames = 0;
@@ -1085,15 +1090,17 @@ function stopMicrophone() {
   microphoneContext = null;
   microphoneAnalyser = null;
   microphoneData = null;
+  microphoneFreqData = null;
   micButton.disabled = false;
   micButton.textContent = 'Allow Microphone to Blow Out the Candles';
   micMeter.style.width = '0%';
 }
 
 function sampleMicrophone() {
-  if (!microphoneActive || !microphoneAnalyser || !microphoneData) return;
+  if (!microphoneActive || !microphoneAnalyser || !microphoneData || !microphoneFreqData) return;
 
   microphoneAnalyser.getByteTimeDomainData(microphoneData);
+  microphoneAnalyser.getByteFrequencyData(microphoneFreqData);
   let sum = 0;
   let peak = 0;
   for (let i = 0; i < microphoneData.length; i++) {
@@ -1103,30 +1110,35 @@ function sampleMicrophone() {
   }
   const rms = Math.sqrt(sum / microphoneData.length);
 
-  // Learn the room's normal noise briefly, then use an adaptive threshold.
-  if (microphoneCalibrationFrames < 24) {
-    microphoneNoiseFloor = microphoneNoiseFloor * 0.82 + rms * 0.18;
+  let freqSum = 0;
+  const startBin = 2;
+  const endBin = Math.min(microphoneFreqData.length, 56);
+  for (let i = startBin; i < endBin; i++) freqSum += microphoneFreqData[i];
+  const freqEnergy = (freqSum / Math.max(1, endBin - startBin)) / 255;
+
+  const combined = Math.max(rms * 1.05, peak * 0.7, freqEnergy * 0.95);
+
+  if (microphoneCalibrationFrames < 20) {
+    microphoneNoiseFloor = microphoneNoiseFloor * 0.78 + combined * 0.22;
     microphoneCalibrationFrames++;
-  } else if (rms < microphoneNoiseFloor * 1.35) {
-    microphoneNoiseFloor = microphoneNoiseFloor * 0.98 + rms * 0.02;
+  } else if (combined < microphoneNoiseFloor * 1.45) {
+    microphoneNoiseFloor = microphoneNoiseFloor * 0.985 + combined * 0.015;
   }
 
-  const threshold = Math.max(0.014, microphoneNoiseFloor * 1.75);
-  const loudness = Math.max(rms, peak * 0.55);
-  const meter = Math.min(100, (loudness / Math.max(threshold * 3.2, 0.06)) * 100);
+  const threshold = Math.max(0.012, microphoneNoiseFloor * 1.45);
+  const meter = Math.min(100, (combined / Math.max(threshold * 2.5, 0.05)) * 100);
   micMeter.style.width = `${meter}%`;
 
-  // A blow, voice, or clap held for a few frames will work reliably.
-  const detected = microphoneCalibrationFrames >= 10 && loudness > threshold;
+  const detected = microphoneCalibrationFrames >= 8 && combined > threshold;
   sustainedBlowFrames = detected ? sustainedBlowFrames + 1 : Math.max(0, sustainedBlowFrames - 1);
 
   const now = performance.now();
-  if (sustainedBlowFrames >= 3 && now - lastMicrophoneExtinguish > 90) {
+  if (sustainedBlowFrames >= 2 && now - lastMicrophoneExtinguish > 70) {
     sustainedBlowFrames = 0;
     lastMicrophoneExtinguish = now;
     extinguishOne();
-    // Stronger airflow extinguishes a second candle, making one sustained blow useful.
-    if (loudness > threshold * 2.2) setTimeout(extinguishOne, 55);
+    if (combined > threshold * 1.8) setTimeout(extinguishOne, 45);
+    if (combined > threshold * 2.4) setTimeout(extinguishOne, 95);
   }
 }
 function launchCelebration() {
@@ -1171,10 +1183,10 @@ function launchFireworks() {
 }
 
 function focusCake() {
-  animateCamera(new THREE.Vector3(0, 5.2, 11.5), new THREE.Vector3(0, 2.4, 0), 700);
+  animateCamera(new THREE.Vector3(0, 4.8, 12.2), new THREE.Vector3(0, 2.35, 0.15), 700);
 }
 function resetView() {
-  animateCamera(new THREE.Vector3(0, 5.5, 13.5), new THREE.Vector3(0, 2.4, 0), 700);
+  animateCamera(new THREE.Vector3(0, 5.2, 13.2), new THREE.Vector3(0, 2.35, 0.15), 700);
 }
 function animateCamera(position, target, duration) {
   const fromPosition = camera.position.clone();
@@ -1219,7 +1231,7 @@ function markUiActive() {
 function onResize() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.85 : 1.15));
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, lowQuality ? 0.78 : 1.0));
   renderer.setSize(innerWidth, innerHeight, false);
 }
 function onKeyDown(event) {
@@ -1239,7 +1251,7 @@ function onKeyDown(event) {
 function animate(time = 0) {
   requestAnimationFrame(animate);
   if (document.hidden) return;
-  const targetInterval = lowQuality ? 20 : 16;
+  const targetInterval = lowQuality ? 24 : 18;
   if (time - lastTime < targetInterval) return;
   const delta = Math.min(clock.getDelta(), 0.05);
   controls.update();
