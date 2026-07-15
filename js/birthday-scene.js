@@ -173,6 +173,7 @@ async function init() {
   updateProgress(32, 'Setting the birthday table…');
   createTable();
   createCake();
+  createCakeBackdrop();
 
   updateProgress(58, 'Building the photo frames…');
   await createPhotoFrames();
@@ -555,6 +556,56 @@ function makeFrame(index, position, rotation, scale = 1) {
   interactiveFrames.push(photo);
   frameRecords[index] = { group, photo, canvas, context: canvas.getContext('2d'), image: null, dataUrl: null, zoom: 1, x: 0, y: 0, texture };
   return group;
+}
+
+
+function createCakeBackdrop() {
+  const group = new THREE.Group();
+  group.position.set(0, 0, 0);
+
+  const panelGeom = new RoundedBoxGeometry(8.4, 5.2, 0.12, 6, 0.08);
+  const panelMat = new THREE.MeshStandardMaterial({ color: 0x1a1020, metalness: 0.08, roughness: 0.56 });
+  const panel = new THREE.Mesh(panelGeom, panelMat);
+  panel.position.set(0, 3.0, -6.3);
+  group.add(panel);
+
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(9.1, 5.9),
+    new THREE.MeshBasicMaterial({ color: 0xffb3d9, transparent: true, opacity: 0.12 })
+  );
+  glow.position.set(0, 3.0, -6.42);
+  group.add(glow);
+
+  const photoMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.9,
+    metalness: 0.0,
+    emissive: 0x11040d,
+    emissiveIntensity: 0.18
+  });
+  const photo = new THREE.Mesh(new THREE.PlaneGeometry(7.75, 4.55), photoMat);
+  photo.position.set(0, 3.0, -6.22);
+  group.add(photo);
+
+  const edge = new THREE.Mesh(
+    new THREE.TorusGeometry(4.38, 0.045, 8, 80, Math.PI * 2),
+    new THREE.MeshStandardMaterial({ color: 0xf0c5df, roughness: 0.55, metalness: 0.12 })
+  );
+  edge.rotation.x = Math.PI / 2;
+  edge.scale.set(1, 0.61, 1);
+  edge.position.set(0, 3.0, -6.16);
+  group.add(edge);
+
+  const loader = new THREE.TextureLoader();
+  loader.load('assets/images/cake-background.jpg', (tex) => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    photo.material.map = tex;
+    photo.material.needsUpdate = true;
+  });
+
+  scene.add(group);
 }
 
 async function createPhotoFrames() {
