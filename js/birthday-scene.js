@@ -173,7 +173,7 @@ async function init() {
   updateProgress(32, 'Setting the birthday table…');
   createTable();
   createCake();
-  createCakeBackdrop();
+  await createCakeBackdrop();
 
   updateProgress(58, 'Building the photo frames…');
   await createPhotoFrames();
@@ -559,54 +559,74 @@ function makeFrame(index, position, rotation, scale = 1) {
 }
 
 
-function createCakeBackdrop() {
+async function createCakeBackdrop() {
   const group = new THREE.Group();
-  group.position.set(0, 0, 0);
 
-  const panelGeom = new RoundedBoxGeometry(8.4, 5.2, 0.12, 6, 0.08);
-  const panelMat = new THREE.MeshStandardMaterial({ color: 0x1a1020, metalness: 0.08, roughness: 0.56 });
-  const panel = new THREE.Mesh(panelGeom, panelMat);
-  panel.position.set(0, 3.0, -6.3);
-  group.add(panel);
-
-  const glow = new THREE.Mesh(
-    new THREE.PlaneGeometry(9.1, 5.9),
-    new THREE.MeshBasicMaterial({ color: 0xffb3d9, transparent: true, opacity: 0.12 })
+  const outerFrame = new THREE.Mesh(
+    new RoundedBoxGeometry(8.9, 5.7, 0.28, 6, 0.08),
+    new THREE.MeshStandardMaterial({ color: 0x25111f, roughness: 0.5, metalness: 0.12 })
   );
-  glow.position.set(0, 3.0, -6.42);
-  group.add(glow);
+  outerFrame.position.set(0, 3.05, -6.55);
+  group.add(outerFrame);
 
-  const photoMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0.9,
-    metalness: 0.0,
-    emissive: 0x11040d,
-    emissiveIntensity: 0.18
-  });
-  const photo = new THREE.Mesh(new THREE.PlaneGeometry(7.75, 4.55), photoMat);
-  photo.position.set(0, 3.0, -6.22);
+  const innerFrame = new THREE.Mesh(
+    new RoundedBoxGeometry(8.15, 4.95, 0.16, 6, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xf2d3dd, roughness: 0.38, metalness: 0.06 })
+  );
+  innerFrame.position.set(0, 3.05, -6.40);
+  group.add(innerFrame);
+
+  const photoMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const photo = new THREE.Mesh(new THREE.PlaneGeometry(7.55, 4.35), photoMaterial);
+  photo.position.set(0, 3.05, -6.28);
   group.add(photo);
 
-  const edge = new THREE.Mesh(
-    new THREE.TorusGeometry(4.38, 0.045, 8, 80, Math.PI * 2),
-    new THREE.MeshStandardMaterial({ color: 0xf0c5df, roughness: 0.55, metalness: 0.12 })
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(8.8, 5.5),
+    new THREE.MeshBasicMaterial({ color: 0xff8fcb, transparent: true, opacity: 0.12 })
   );
-  edge.rotation.x = Math.PI / 2;
-  edge.scale.set(1, 0.61, 1);
-  edge.position.set(0, 3.0, -6.16);
-  group.add(edge);
+  glow.position.set(0, 3.05, -6.70);
+  group.add(glow);
 
-  const loader = new THREE.TextureLoader();
-  loader.load('assets/images/cake-background.jpg', (tex) => {
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    photo.material.map = tex;
-    photo.material.needsUpdate = true;
-  });
+  const shelf = new THREE.Mesh(
+    new RoundedBoxGeometry(6.8, 0.14, 0.65, 4, 0.05),
+    new THREE.MeshStandardMaterial({ color: 0x46323d, roughness: 0.62, metalness: 0.08 })
+  );
+  shelf.position.set(0, 0.62, -5.9);
+  group.add(shelf);
+
+  const leftLight = new THREE.PointLight(0xff9cd8, 1.4, 7, 2);
+  leftLight.position.set(-3.5, 3.9, -4.9);
+  group.add(leftLight);
+  const rightLight = new THREE.PointLight(0xa6b8ff, 1.1, 7, 2);
+  rightLight.position.set(3.5, 3.9, -4.9);
+  group.add(rightLight);
 
   scene.add(group);
+
+  const url = new URL('../assets/images/cake-background.jpg', import.meta.url).href;
+  const texture = await new Promise((resolve, reject) => {
+    new THREE.TextureLoader().load(
+      url,
+      (tex) => resolve(tex),
+      undefined,
+      (err) => reject(err)
+    );
+  }).catch((err) => {
+    console.error('Backdrop image failed to load', err);
+    showToast('Background image could not be loaded.');
+    return null;
+  });
+
+  if (!texture) return;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy?.() || 1);
+  photo.material.map = texture;
+  photo.material.needsUpdate = true;
 }
+
 
 async function createPhotoFrames() {
   // Repositioned so every frame clearly rests on the table and stays away from the cake volume.
