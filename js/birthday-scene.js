@@ -560,50 +560,57 @@ function makeFrame(index, position, rotation, scale = 1) {
 
 
 async function createCakeBackdrop() {
-  // Full-scene portrait backdrop behind the cake so it feels like you are sitting in front of her.
-  const backdropGroup = new THREE.Group();
-
-  const wall = new THREE.Mesh(
-    new THREE.PlaneGeometry(15.5, 10.2),
-    new THREE.MeshBasicMaterial({ color: 0xffffff })
-  );
-  wall.position.set(0, 4.15, -9.25);
-  backdropGroup.add(wall);
-
-  const edgeDarken = new THREE.Mesh(
-    new THREE.PlaneGeometry(16.4, 10.9),
-    new THREE.MeshBasicMaterial({ color: 0x12060f, transparent: true, opacity: 0.26 })
-  );
-  edgeDarken.position.set(0, 4.15, -9.38);
-  backdropGroup.add(edgeDarken);
-
-  const floorShadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(14.0, 2.2),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18 })
-  );
-  floorShadow.position.set(0, 0.55, -8.65);
-  backdropGroup.add(floorShadow);
-
-  const leftLight = new THREE.PointLight(0xff93d1, 1.8, 14, 2);
-  leftLight.position.set(-4.8, 5.1, -5.7);
-  backdropGroup.add(leftLight);
-  const rightLight = new THREE.PointLight(0xffc17d, 1.4, 14, 2);
-  rightLight.position.set(4.8, 4.8, -5.9);
-  backdropGroup.add(rightLight);
-  const softFill = new THREE.PointLight(0xa9b7ff, 0.85, 16, 2);
-  softFill.position.set(0, 6.0, -6.2);
-  backdropGroup.add(softFill);
-
-  scene.add(backdropGroup);
-
-  // Make the old skyline much less visible so the portrait becomes the real background.
+  // Large curved portrait backdrop behind the cake.
+  // It replaces the black empty space and makes it feel like you are seated in front of her.
   if (cityGroup) cityGroup.visible = false;
 
-  const url = new URL('../assets/images/cake-background.jpg', import.meta.url).href;
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const width = 21;
+  const height = 10.2;
+  const segmentsX = 72;
+  const segmentsY = 20;
+  const geometry = new THREE.PlaneGeometry(width, height, segmentsX, segmentsY);
+  const pos = geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const nx = x / (width * 0.5);
+    const curveDepth = -Math.pow(Math.abs(nx), 1.7) * 3.1;
+    const topTilt = ((y / (height * 0.5)) + 1) * 0.08;
+    pos.setZ(i, curveDepth - topTilt);
+  }
+  pos.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const backdrop = new THREE.Mesh(geometry, material);
+  backdrop.position.set(0, 4.45, -8.9);
+  group.add(backdrop);
+
+  const shadowBase = new THREE.Mesh(
+    new THREE.PlaneGeometry(18, 2.2),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.16 })
+  );
+  shadowBase.position.set(0, 0.7, -8.15);
+  group.add(shadowBase);
+
+  const leftLight = new THREE.PointLight(0xff8ecf, 1.2, 18, 2);
+  leftLight.position.set(-5.2, 5.3, -5.5);
+  group.add(leftLight);
+  const rightLight = new THREE.PointLight(0xffbf82, 1.0, 18, 2);
+  rightLight.position.set(5.0, 5.1, -5.8);
+  group.add(rightLight);
+  const softFill = new THREE.PointLight(0xffffff, 0.45, 16, 2);
+  softFill.position.set(0, 6.2, -6.4);
+  group.add(softFill);
+
+  const url = new URL('../assets/images/cake-background-curved.png', import.meta.url).href;
   const texture = await new Promise((resolve, reject) => {
     new THREE.TextureLoader().load(url, resolve, undefined, reject);
   }).catch((err) => {
-    console.error('Backdrop image failed to load', err);
+    console.error('Curved backdrop image failed to load', err);
     showToast('Background image could not be loaded.');
     return null;
   });
@@ -616,8 +623,8 @@ async function createCakeBackdrop() {
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
 
-  // Cover-crop the portrait so it fills the entire background without stretching.
-  const planeAspect = 15.5 / 10.2;
+  // cover-crop so the image fully fills the curved backdrop.
+  const planeAspect = width / height;
   const imageAspect = texture.image.width / texture.image.height;
   if (imageAspect > planeAspect) {
     const repeatX = planeAspect / imageAspect;
@@ -629,8 +636,8 @@ async function createCakeBackdrop() {
     texture.offset.set(0, (1 - repeatY) / 2);
   }
 
-  wall.material.map = texture;
-  wall.material.needsUpdate = true;
+  material.map = texture;
+  material.needsUpdate = true;
 }
 
 
