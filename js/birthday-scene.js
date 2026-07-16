@@ -560,71 +560,77 @@ function makeFrame(index, position, rotation, scale = 1) {
 
 
 async function createCakeBackdrop() {
-  const group = new THREE.Group();
+  // Full-scene portrait backdrop behind the cake so it feels like you are sitting in front of her.
+  const backdropGroup = new THREE.Group();
 
-  const outerFrame = new THREE.Mesh(
-    new RoundedBoxGeometry(8.9, 5.7, 0.28, 6, 0.08),
-    new THREE.MeshStandardMaterial({ color: 0x25111f, roughness: 0.5, metalness: 0.12 })
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(15.5, 10.2),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
   );
-  outerFrame.position.set(0, 3.05, -6.55);
-  group.add(outerFrame);
+  wall.position.set(0, 4.15, -9.25);
+  backdropGroup.add(wall);
 
-  const innerFrame = new THREE.Mesh(
-    new RoundedBoxGeometry(8.15, 4.95, 0.16, 6, 0.06),
-    new THREE.MeshStandardMaterial({ color: 0xf2d3dd, roughness: 0.38, metalness: 0.06 })
+  const edgeDarken = new THREE.Mesh(
+    new THREE.PlaneGeometry(16.4, 10.9),
+    new THREE.MeshBasicMaterial({ color: 0x12060f, transparent: true, opacity: 0.26 })
   );
-  innerFrame.position.set(0, 3.05, -6.40);
-  group.add(innerFrame);
+  edgeDarken.position.set(0, 4.15, -9.38);
+  backdropGroup.add(edgeDarken);
 
-  const photoMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const photo = new THREE.Mesh(new THREE.PlaneGeometry(7.55, 4.35), photoMaterial);
-  photo.position.set(0, 3.05, -6.28);
-  group.add(photo);
-
-  const glow = new THREE.Mesh(
-    new THREE.PlaneGeometry(8.8, 5.5),
-    new THREE.MeshBasicMaterial({ color: 0xff8fcb, transparent: true, opacity: 0.12 })
+  const floorShadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(14.0, 2.2),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.18 })
   );
-  glow.position.set(0, 3.05, -6.70);
-  group.add(glow);
+  floorShadow.position.set(0, 0.55, -8.65);
+  backdropGroup.add(floorShadow);
 
-  const shelf = new THREE.Mesh(
-    new RoundedBoxGeometry(6.8, 0.14, 0.65, 4, 0.05),
-    new THREE.MeshStandardMaterial({ color: 0x46323d, roughness: 0.62, metalness: 0.08 })
-  );
-  shelf.position.set(0, 0.62, -5.9);
-  group.add(shelf);
+  const leftLight = new THREE.PointLight(0xff93d1, 1.8, 14, 2);
+  leftLight.position.set(-4.8, 5.1, -5.7);
+  backdropGroup.add(leftLight);
+  const rightLight = new THREE.PointLight(0xffc17d, 1.4, 14, 2);
+  rightLight.position.set(4.8, 4.8, -5.9);
+  backdropGroup.add(rightLight);
+  const softFill = new THREE.PointLight(0xa9b7ff, 0.85, 16, 2);
+  softFill.position.set(0, 6.0, -6.2);
+  backdropGroup.add(softFill);
 
-  const leftLight = new THREE.PointLight(0xff9cd8, 1.4, 7, 2);
-  leftLight.position.set(-3.5, 3.9, -4.9);
-  group.add(leftLight);
-  const rightLight = new THREE.PointLight(0xa6b8ff, 1.1, 7, 2);
-  rightLight.position.set(3.5, 3.9, -4.9);
-  group.add(rightLight);
+  scene.add(backdropGroup);
 
-  scene.add(group);
+  // Make the old skyline much less visible so the portrait becomes the real background.
+  if (cityGroup) cityGroup.visible = false;
 
   const url = new URL('../assets/images/cake-background.jpg', import.meta.url).href;
   const texture = await new Promise((resolve, reject) => {
-    new THREE.TextureLoader().load(
-      url,
-      (tex) => resolve(tex),
-      undefined,
-      (err) => reject(err)
-    );
+    new THREE.TextureLoader().load(url, resolve, undefined, reject);
   }).catch((err) => {
     console.error('Backdrop image failed to load', err);
     showToast('Background image could not be loaded.');
     return null;
   });
-
   if (!texture) return;
+
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy?.() || 1);
-  photo.material.map = texture;
-  photo.material.needsUpdate = true;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+
+  // Cover-crop the portrait so it fills the entire background without stretching.
+  const planeAspect = 15.5 / 10.2;
+  const imageAspect = texture.image.width / texture.image.height;
+  if (imageAspect > planeAspect) {
+    const repeatX = planeAspect / imageAspect;
+    texture.repeat.set(repeatX, 1);
+    texture.offset.set((1 - repeatX) / 2, 0);
+  } else {
+    const repeatY = imageAspect / planeAspect;
+    texture.repeat.set(1, repeatY);
+    texture.offset.set(0, (1 - repeatY) / 2);
+  }
+
+  wall.material.map = texture;
+  wall.material.needsUpdate = true;
 }
 
 
