@@ -560,57 +560,57 @@ function makeFrame(index, position, rotation, scale = 1) {
 
 
 async function createCakeBackdrop() {
-  // Large curved portrait backdrop behind the cake.
-  // It replaces the black empty space and makes it feel like you are seated in front of her.
+  // Use the uploaded panorama as the full visual background behind the cake.
+  // It wraps slightly around the scene so there are no black empty sides.
   if (cityGroup) cityGroup.visible = false;
 
   const group = new THREE.Group();
   scene.add(group);
 
-  const width = 21;
-  const height = 10.2;
-  const segmentsX = 72;
-  const segmentsY = 20;
-  const geometry = new THREE.PlaneGeometry(width, height, segmentsX, segmentsY);
-  const pos = geometry.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const y = pos.getY(i);
-    const nx = x / (width * 0.5);
-    const curveDepth = -Math.pow(Math.abs(nx), 1.7) * 3.1;
-    const topTilt = ((y / (height * 0.5)) + 1) * 0.08;
-    pos.setZ(i, curveDepth - topTilt);
-  }
-  pos.needsUpdate = true;
-  geometry.computeVertexNormals();
-
-  const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const backdrop = new THREE.Mesh(geometry, material);
-  backdrop.position.set(0, 4.45, -8.9);
-  group.add(backdrop);
-
-  const shadowBase = new THREE.Mesh(
-    new THREE.PlaneGeometry(18, 2.2),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.16 })
+  // Soft glow around the panorama so the transition to the dark scene feels natural.
+  const ambientGlow = new THREE.Mesh(
+    new THREE.PlaneGeometry(34, 17),
+    new THREE.MeshBasicMaterial({ color: 0x140912, transparent: true, opacity: 0.22 })
   );
-  shadowBase.position.set(0, 0.7, -8.15);
-  group.add(shadowBase);
+  ambientGlow.position.set(0, 4.5, -12.6);
+  group.add(ambientGlow);
 
-  const leftLight = new THREE.PointLight(0xff8ecf, 1.2, 18, 2);
-  leftLight.position.set(-5.2, 5.3, -5.5);
+  // Curved panoramic wall. Camera looks toward its inner side.
+  const radius = 18;
+  const height = 14;
+  const thetaStart = Math.PI * 0.06;
+  const thetaLength = Math.PI * 0.88;
+  const panoGeometry = new THREE.CylinderGeometry(radius, radius, height, 96, 1, true, thetaStart, thetaLength);
+  const panoMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide });
+  const panorama = new THREE.Mesh(panoGeometry, panoMaterial);
+  panorama.position.set(0, 5.0, -6.6);
+  panorama.rotation.y = Math.PI;
+  group.add(panorama);
+
+  // Ground blend so the lower edge does not look cut off.
+  const lowerBlend = new THREE.Mesh(
+    new THREE.PlaneGeometry(28, 4.5),
+    new THREE.MeshBasicMaterial({ color: 0x040206, transparent: true, opacity: 0.22 })
+  );
+  lowerBlend.position.set(0, 1.2, -12.3);
+  group.add(lowerBlend);
+
+  // Gentle lights to keep the cake area bright while preserving the photo as background.
+  const leftLight = new THREE.PointLight(0xff95d0, 1.15, 18, 2);
+  leftLight.position.set(-4.8, 5.2, -4.8);
   group.add(leftLight);
-  const rightLight = new THREE.PointLight(0xffbf82, 1.0, 18, 2);
-  rightLight.position.set(5.0, 5.1, -5.8);
+  const rightLight = new THREE.PointLight(0xffb678, 1.0, 18, 2);
+  rightLight.position.set(4.8, 5.0, -5.0);
   group.add(rightLight);
-  const softFill = new THREE.PointLight(0xffffff, 0.45, 16, 2);
-  softFill.position.set(0, 6.2, -6.4);
-  group.add(softFill);
+  const fillLight = new THREE.PointLight(0xffffff, 0.34, 18, 2);
+  fillLight.position.set(0, 6.2, -4.5);
+  group.add(fillLight);
 
-  const url = new URL('../assets/images/cake-background-curved.png', import.meta.url).href;
+  const url = new URL('../assets/images/cake-background-panorama.png', import.meta.url).href;
   const texture = await new Promise((resolve, reject) => {
     new THREE.TextureLoader().load(url, resolve, undefined, reject);
   }).catch((err) => {
-    console.error('Curved backdrop image failed to load', err);
+    console.error('Panorama background failed to load', err);
     showToast('Background image could not be loaded.');
     return null;
   });
@@ -623,21 +623,21 @@ async function createCakeBackdrop() {
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
 
-  // cover-crop so the image fully fills the curved backdrop.
-  const planeAspect = width / height;
+  // Cover the full curved surface cleanly.
+  const wallAspect = (radius * thetaLength) / height;
   const imageAspect = texture.image.width / texture.image.height;
-  if (imageAspect > planeAspect) {
-    const repeatX = planeAspect / imageAspect;
+  if (imageAspect > wallAspect) {
+    const repeatX = wallAspect / imageAspect;
     texture.repeat.set(repeatX, 1);
     texture.offset.set((1 - repeatX) / 2, 0);
   } else {
-    const repeatY = imageAspect / planeAspect;
+    const repeatY = imageAspect / wallAspect;
     texture.repeat.set(1, repeatY);
     texture.offset.set(0, (1 - repeatY) / 2);
   }
 
-  material.map = texture;
-  material.needsUpdate = true;
+  panoMaterial.map = texture;
+  panoMaterial.needsUpdate = true;
 }
 
 
